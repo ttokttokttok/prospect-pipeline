@@ -4,9 +4,7 @@ node_modules/
 .env
 prospect.db
 prospect.db-*
-runs/
-!app/api/runs/
-!app/api/runs/**
+/runs/
 *.log
 .DS_Store
 .mcp.json
