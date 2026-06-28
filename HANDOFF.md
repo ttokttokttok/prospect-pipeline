@@ -174,3 +174,21 @@ A web UI to browse prospects and understand each fast for cold emails.
 ### Phase 2 follow-ups (none blocking)
 - Dossier shows email inline in the header but no `phone`/Contact section; clipboard write isn't `.catch()`'d; `interests` aren't per-item string-coerced (rare React key warning); a few index keys / no AbortController on unmount. All cosmetic.
 - **Next phase (per Josh): cold-email *drafting/curation*** — Phase 2 gives the hooks (the angle); turning a hook into a finished, editable email draft is the planned next step.
+
+---
+
+## Phase 3 — Brain View (DONE, merged)
+
+Per-person "how to approach them" signals on the dossier:
+- **Current focus** (AI) — one-liner on what they're working on now (grounded in current role + recent posts).
+- **Interest radar** (AI-chosen) — `interestProfile`: the model picks 5-7 categories and scores each 0-100; rendered as a **recharts** radar (`src/ui/radar.tsx`). Falls back to interest tags for syntheses cached before this phase.
+- **Context chips** (deterministic, `src/pipeline/metrics.ts`) — tenure at current company + posts-only recency (`recentlyActive` / `Last posted …`).
+- **3 most-recent posts** surfaced.
+- All fold into the existing on-demand synthesis call (no extra AI cost) + one pure `computeMetrics`. `getPersonDetail` now returns `{ dossier, synthesis, metrics }`.
+
+**Posts + contacts are now default-ON** (we have ample credits). Disable per run with `--no-posts` / `--no-contacts` (CLI) or `posts:false` / `contacts:false` (API). Note: a default run now takes several minutes (contact lookups ~10 min/person, parallelized); use `--no-contacts` for fast runs.
+
+**Live-verified:** seeded posts for ~48 people; metrics correct; regenerated synthesis produced a grounded current-focus + a 7-axis interest profile (radar).
+
+### To populate the brain view for older prospects
+People collected before Phase 3 have no posts and old syntheses. Re-run the prompt (posts default-on) and Regenerate their synthesis (the button force-bypasses the cache) to fill in current-focus + radar.
