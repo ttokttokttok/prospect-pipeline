@@ -51,7 +51,11 @@ export async function runPipeline(
       if (r.status === "fulfilled") {
         const ep = r.value;
         repo.upsertPerson(ep);
-        // signals persisted in Task 3
+        const sigs = [
+          ...ep.posts.map((p) => ({ source: p.source as "linkedin" | "twitter", content: p.text, url: p.url ?? "" })),
+          ...ep.webMentions.map((m) => ({ source: "web" as const, content: m.snippet ?? m.title, url: m.url })),
+        ];
+        if (sigs.length) repo.addSignals(ep.linkedinUrl, sigs);
         if (ep.workEmail || ep.personalEmail || ep.phone) contacts++;
         enriched.push(ep);
       }

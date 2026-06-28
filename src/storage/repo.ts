@@ -56,19 +56,24 @@ export class Repo {
   upsertPerson(p: EnrichedPerson): void {
     this.db
       .prepare(
-        `INSERT INTO people (linkedin_url, company_domain, name, title, twitter, work_email, personal_email, phone, last_enriched_at)
-         VALUES (@linkedinUrl, @companyDomain, @name, @title, @twitter, @workEmail, @personalEmail, @phone, @now)
+        `INSERT INTO people (linkedin_url, company_domain, name, title, twitter, work_email, personal_email, phone, last_enriched_at, dossier)
+         VALUES (@linkedinUrl, @companyDomain, @name, @title, @twitter, @workEmail, @personalEmail, @phone, @now, @dossier)
          ON CONFLICT(linkedin_url) DO UPDATE SET
            company_domain=excluded.company_domain, name=excluded.name, title=excluded.title,
            twitter=excluded.twitter, work_email=excluded.work_email,
            personal_email=excluded.personal_email, phone=excluded.phone,
-           last_enriched_at=excluded.last_enriched_at`,
+           last_enriched_at=excluded.last_enriched_at, dossier=excluded.dossier`,
       )
       .run({
         linkedinUrl: p.linkedinUrl, companyDomain: p.companyDomain, name: p.name, title: p.title,
         twitter: p.twitter, workEmail: p.workEmail, personalEmail: p.personalEmail, phone: p.phone,
-        now: new Date().toISOString(),
+        dossier: JSON.stringify(p), now: new Date().toISOString(),
       });
+  }
+
+  getDossier(linkedinUrl: string): EnrichedPerson | null {
+    const row = this.db.prepare("SELECT dossier FROM people WHERE linkedin_url = ?").get(linkedinUrl) as any;
+    return row?.dossier ? (JSON.parse(row.dossier) as EnrichedPerson) : null;
   }
 
   getPerson(linkedinUrl: string): { lastEnrichedAt: string | null } | null {
@@ -81,9 +86,15 @@ export class Repo {
     return !p || p.lastEnrichedAt === null;
   }
 
-  // addSignals restored in Task 3 (signals schema rework)
-  addSignals(_linkedinUrl: string, _signals: unknown[]): void {
-    // signals persisted in Task 3
+  addSignals(linkedinUrl: string, signals: { source: "linkedin" | "twitter" | "web"; content: string; url: string }[]): void {
+    const stmt = this.db.prepare(
+      `INSERT INTO signals (person_linkedin_url, source, content, url, fetched_at)
+       VALUES (?, ?, ?, ?, ?)`,
+    );
+    const now = new Date().toISOString();
+    for (const s of signals) {
+      stmt.run(linkedinUrl, s.source, s.content, s.url, now);
+    }
   }
 }
 
