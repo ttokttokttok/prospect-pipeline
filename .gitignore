@@ -5,6 +5,9 @@ node_modules/
 prospect.db
 prospect.db-*
 runs/
+!app/api/runs/
+!app/api/runs/**
 *.log
 .DS_Store
 .mcp.json
+.superpowers/

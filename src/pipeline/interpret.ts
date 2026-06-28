@@ -1,5 +1,5 @@
-import { services } from "../orange.js";
-import type { ICP } from "../types.js";
+import { services } from "../orange";
+import type { ICP } from "../types";
 
 const SCHEMA = {
   type: "object",
@@ -17,8 +17,7 @@ export async function interpret(prompt: string): Promise<ICP> {
   const { object } = await services.ai.generateObject({
     prompt: `Extract a B2B ideal-customer-profile filter from this request. Do not fabricate values; use null when unspecified.\n\nRequest: ${prompt}`,
     schema: SCHEMA,
-    intelligence: "low",
-  });
+  }) as any;
   return {
     fundingStage: object.fundingStage ?? null,
     keywords: Array.isArray(object.keywords) ? object.keywords : [],

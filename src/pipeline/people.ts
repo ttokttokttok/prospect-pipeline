@@ -1,5 +1,5 @@
-import { services } from "../orange.js";
-import type { Company, Person } from "../types.js";
+import { services } from "../orange";
+import type { Company, Person } from "../types";
 
 export async function findPeople(company: Company, roles: string[], perCompany = 3): Promise<Person[]> {
   const linkedinUrl = company.linkedin ?? (await resolveCompanyUrl(company));

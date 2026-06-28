@@ -1,6 +1,6 @@
-import { services } from "../orange.js";
-import { domainFromUrl } from "../types.js";
-import type { Company, ICP } from "../types.js";
+import { services } from "../orange";
+import { domainFromUrl } from "../types";
+import type { Company, ICP } from "../types";
 
 interface RawCompany {
   name: string;
@@ -37,7 +37,6 @@ export async function discoverCompanies(icp: ICP, limit = 20): Promise<Company[]
           `Score how well this company fits the ICP (0-100) and explain in one sentence. Do not fabricate.\n\n` +
           `ICP: ${JSON.stringify(icp)}\n\nCompany: ${c.name} — ${c.description ?? "(no description)"} (${c.domain})`,
         schema: SCORE_SCHEMA,
-        intelligence: "low",
       });
       return {
         domain: c.domain, name: c.name, linkedin: c.linkedin, description: c.description,

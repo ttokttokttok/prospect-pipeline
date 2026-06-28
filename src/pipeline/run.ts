@@ -1,11 +1,11 @@
 import { join } from "node:path";
-import { interpret } from "./interpret.js";
-import { discoverCompanies } from "./companies.js";
-import { findPeople } from "./people.js";
-import { enrichPerson } from "./enrich.js";
-import { writeRun } from "../output/export.js";
-import type { Repo } from "../storage/repo.js";
-import type { Company, EnrichedPerson, Person, Progress, RunParams } from "../types.js";
+import { interpret } from "./interpret";
+import { discoverCompanies } from "./companies";
+import { findPeople } from "./people";
+import { enrichPerson } from "./enrich";
+import { writeRun } from "../output/export";
+import type { Repo } from "../storage/repo";
+import type { Company, EnrichedPerson, Person, Progress, RunParams } from "../types";
 
 export async function runPipeline(
   jobId: string,

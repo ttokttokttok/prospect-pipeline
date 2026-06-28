@@ -1,5 +1,5 @@
-import type { Db } from "./db.js";
-import type { Company, EnrichedPerson, Job, Progress, RunParams, Signal } from "../types.js";
+import type { Db } from "./db";
+import type { Company, EnrichedPerson, Job, Progress, RunParams, Signal } from "../types";
 
 const EMPTY_PROGRESS: Progress = { stage: "queued", companies: 0, people: 0, contacts: 0 };
 

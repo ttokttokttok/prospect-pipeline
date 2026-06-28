@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { Company, EnrichedPerson } from "../types.js";
+import type { Company, EnrichedPerson } from "../types";
 
 function cell(v: unknown): string {
   const s = v === null || v === undefined ? "" : String(v);

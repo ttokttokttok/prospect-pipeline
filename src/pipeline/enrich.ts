@@ -1,5 +1,5 @@
-import { services } from "../orange.js";
-import type { EnrichedPerson, Person, Signal } from "../types.js";
+import { services } from "../orange";
+import type { EnrichedPerson, Person, Signal } from "../types";
 
 export async function enrichPerson(
   person: Person,
