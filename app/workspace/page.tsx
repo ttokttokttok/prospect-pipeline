@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CommentDraft, EnrichedPerson, MessageDraft, PersonCard, Synthesis } from "../../src/types";
+import type { CommentDraft, EnrichedPerson, MessageDraft, PersonCard, PersonMetrics, Synthesis } from "../../src/types";
+import { InterestRadar } from "../../src/ui/radar";
 
 // ---- design tokens (from the Cadence design) ----
 const C = {
@@ -15,7 +16,7 @@ const C = {
 
 type Mode = "comment" | "message";
 type Channel = "dm" | "email";
-type Detail = { dossier: EnrichedPerson; synthesis: Synthesis | null; comment: CommentDraft | null; message: MessageDraft | null };
+type Detail = { dossier: EnrichedPerson; synthesis: Synthesis | null; metrics: PersonMetrics | null; comment: CommentDraft | null; message: MessageDraft | null };
 type StatusMap = Record<string, { comment: string; message: string }>;
 
 const STATUS_META: Record<string, { label: string; dot: string; bg: string; fg: string }> = {
@@ -31,6 +32,7 @@ const initials = (name: string) =>
 const firstName = (name: string) => name.split(/\s+/)[0] || "there";
 const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "");
 const hostOf = (url: string) => { try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; } };
+const fmtTenure = (months: number) => (months < 12 ? `${months}mo` : `${Math.floor(months / 12)}y${months % 12 ? ` ${months % 12}mo` : ""}`);
 
 export default function Workspace() {
   const [people, setPeople] = useState<PersonCard[] | null>(null);
@@ -197,7 +199,7 @@ export default function Workspace() {
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
 
         {/* RAIL */}
-        <div style={{ width: 74, flex: "none", borderRight: `1px solid ${C.border}`, background: C.panel, display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 0", gap: 4, overflowY: "auto" }}>
+        <div className="ccg-scroll" style={{ width: 74, flex: "none", borderRight: `1px solid ${C.border}`, background: C.panel, display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 0", gap: 4, overflowY: "auto" }}>
           <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: ".1em", color: C.faint, marginBottom: 6 }}>PIPE</div>
           {(people ?? []).map((p) => {
             const active = p.id === selectedId;
@@ -218,7 +220,7 @@ export default function Workspace() {
         </div>
 
         {/* CONTEXT PANEL */}
-        <div style={{ width: "42%", maxWidth: 560, flex: "none", borderRight: `1px solid ${C.border}`, overflowY: "auto", padding: "26px 30px 60px" }}>
+        <div className="ccg-scroll" style={{ width: "42%", maxWidth: 560, flex: "none", borderRight: `1px solid ${C.border}`, overflowY: "auto", padding: "26px 30px 60px" }}>
           {!champ ? <SkeletonBlock /> : <>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 13, marginBottom: 14 }}>
               <div style={{ width: 48, height: 48, flex: "none", borderRadius: 999, background: "linear-gradient(135deg,#ECE7DD,#D6CFC2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, color: "#5B574F", fontSize: 17 }}>{initials(champ.name)}</div>
@@ -236,6 +238,23 @@ export default function Workspace() {
               <div style={{ display: "flex", gap: 9, alignItems: "flex-start", background: "#FFFDFB", border: "1px solid #F1E4D8", borderRadius: 11, padding: "12px 14px", marginBottom: 24 }}>
                 <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".06em", color: "#C7873F", flex: "none", marginTop: 2 }}>WHY THEM</span>
                 <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: C.ink3 }}>{detail.synthesis.summary}</p>
+              </div>
+            )}
+
+            {(detail?.synthesis?.currentFocus || (detail?.metrics && (detail.metrics.tenureMonths != null || detail.metrics.recentlyActive || detail.metrics.lastPostAt))) && (
+              <div style={{ background: "#FBFAF8", border: `1px solid ${C.soft}`, borderRadius: 11, padding: "12px 14px", marginBottom: 24 }}>
+                {detail?.synthesis?.currentFocus && (
+                  <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: C.ink3 }}>
+                    <span style={{ fontWeight: 600, color: C.accentTxt }}>✦ Current focus: </span>{detail.synthesis.currentFocus}
+                  </p>
+                )}
+                {detail?.metrics && (detail.metrics.tenureMonths != null || detail.metrics.recentlyActive || detail.metrics.lastPostAt) && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: detail?.synthesis?.currentFocus ? 9 : 0, fontSize: 12, color: C.mut }}>
+                    {detail.metrics.tenureMonths != null && <span style={chip}>⏳ {fmtTenure(detail.metrics.tenureMonths)} at {champ?.companyDomain}</span>}
+                    {detail.metrics.recentlyActive && <span style={chip}>🟢 Active recently</span>}
+                    {!detail.metrics.recentlyActive && detail.metrics.lastPostAt && <span style={chip}>Last posted {detail.metrics.lastPostAt}</span>}
+                  </div>
+                )}
               </div>
             )}
 
@@ -263,6 +282,13 @@ export default function Workspace() {
                 <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: C.mut }}>{firstName(champ.name)} hasn't posted recently, so there's nothing to comment on. The Message mode still works from the rest of the dossier.</p>
               </div>
             )}
+
+            {(detail?.synthesis?.interestProfile?.length ?? 0) > 0 && <div style={{ marginTop: 24 }}>
+              <Label>Interest profile</Label>
+              <div style={{ marginTop: 4, marginLeft: -6 }}>
+                <InterestRadar data={detail!.synthesis!.interestProfile} stroke={C.accent} fill="#F9A06B" height={260} tickFill="#6B6862" />
+              </div>
+            </div>}
 
             {champ.webMentions?.length > 0 && <div style={{ marginTop: 22 }}>
               <Label>Web footprint</Label>
@@ -295,7 +321,7 @@ export default function Workspace() {
         </div>
 
         {/* OUTPUT PANEL */}
-        <div style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "26px 32px 60px", background: C.bg }}>
+        <div className="ccg-scroll" style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "26px 32px 60px", background: C.bg }}>
           <div style={{ maxWidth: 620 }}>
             {/* segmented + status */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
@@ -403,6 +429,14 @@ function Shell({ children, onYou, onTargets }: { children: React.ReactNode; onYo
         </div>
       </div>
       {children}
+      <style>{`
+        .ccg-scroll{ scrollbar-width: thin; scrollbar-color: #DDD7CB transparent; }
+        .ccg-scroll::-webkit-scrollbar{ width: 11px; height: 11px; }
+        .ccg-scroll::-webkit-scrollbar-track{ background: transparent; }
+        .ccg-scroll::-webkit-scrollbar-thumb{ background: #E2DCD0; border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
+        .ccg-scroll::-webkit-scrollbar-thumb:hover{ background: #CFC8B9; background-clip: content-box; }
+        .ccg-scroll::-webkit-scrollbar-corner{ background: transparent; }
+      `}</style>
     </div>
   );
 }
@@ -510,6 +544,7 @@ function Modal({ kind, onClose, product, setProduct, voice, setVoice, saveYou, r
 
 // ---- style helpers ----
 const navBtn: React.CSSProperties = { fontFamily: "inherit", fontSize: 13, fontWeight: 500, color: C.ink3, background: "none", border: "1px solid transparent", padding: "6px 11px", borderRadius: 8, cursor: "pointer" };
+const chip: React.CSSProperties = { background: "#F4F2EC", borderRadius: 7, padding: "3px 9px" };
 const tabStyle = (active: boolean, small = false): React.CSSProperties => ({ flex: small ? undefined : 1, padding: small ? "5px 14px" : "7px 0", textAlign: "center", fontFamily: "inherit", fontSize: 13, fontWeight: 600, borderRadius: small ? 7 : 9, border: "none", cursor: "pointer", color: active ? C.ink : C.mut, background: active ? "#fff" : "transparent", boxShadow: active ? "0 1px 2px rgba(0,0,0,.06)" : "none" });
 const darkBtn: React.CSSProperties = { fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: "#fff", background: C.ink, border: "none", padding: "9px 16px", borderRadius: 9, cursor: "pointer" };
 const ghostBtn: React.CSSProperties = { fontFamily: "inherit", fontSize: 13, fontWeight: 500, color: C.ink3, background: "#fff", border: `1px solid #E4E1D9`, padding: "9px 14px", borderRadius: 9, cursor: "pointer" };
