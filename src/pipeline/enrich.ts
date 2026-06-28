@@ -1,5 +1,5 @@
 import { services } from "../orange";
-import type { Education, EnrichedPerson, Experience, Person } from "../types";
+import type { Education, EnrichedPerson, Experience, Person, WebMention } from "../types";
 
 export async function enrichPerson(
   person: Person,
@@ -7,9 +7,10 @@ export async function enrichPerson(
 ): Promise<EnrichedPerson> {
   const wantContact = opts.contacts && !opts.skipContact;
 
-  const [profile, contact] = await Promise.all([
+  const [profile, contact, webMentions] = await Promise.all([
     enrichProfile(person.linkedinUrl),
     wantContact ? getContact(person) : Promise.resolve(null),
+    gatherWebMentions(person),
   ]);
 
   return {
@@ -30,7 +31,7 @@ export async function enrichPerson(
     jobsCount: typeof profile?.jobs_count === "number" ? (profile!.jobs_count as number) : null,
     recommenderCount: typeof profile?.recommender_count === "number" ? (profile!.recommender_count as number) : null,
     posts: [],
-    webMentions: [],
+    webMentions,
     rawProfile: profile ?? null,
   };
 }
@@ -69,5 +70,29 @@ async function getContact(person: Person): Promise<any | null> {
     return await services.person.contact.get({ linkedinUrl: person.linkedinUrl, required: ["email", "phone"] });
   } catch {
     return null;
+  }
+}
+
+async function gatherWebMentions(person: Person): Promise<WebMention[]> {
+  const name = `"${person.name}"`;
+  const company = person.companyDomain.replace(/\.[a-z]+$/i, "");
+  const specs: { category: WebMention["category"]; query: string }[] = [
+    { category: "talk", query: `${name} ${company} (conference OR talk OR keynote)` },
+    { category: "podcast", query: `${name} (podcast OR interview)` },
+    { category: "github", query: `${name} site:github.com` },
+    { category: "article", query: `${name} ${company} (blog OR article)` },
+  ];
+  try {
+    const batches = await services.web.batchSearch({ queries: specs.map((s) => ({ query: s.query })) });
+    const out: WebMention[] = [];
+    batches.forEach((b: any, i: number) => {
+      for (const r of (b?.results ?? []).slice(0, 3)) {
+        if (!r?.link) continue;
+        out.push({ category: specs[i].category, title: r.title ?? "", url: r.link, snippet: r.snippet ?? null });
+      }
+    });
+    return out;
+  } catch {
+    return [];
   }
 }

@@ -84,3 +84,24 @@ test("skips contact lookup when skipContact=true", async () => {
   expect(contactGet).not.toHaveBeenCalled();
   expect(out.workEmail).toBeNull();
 });
+
+test("gathers categorized web mentions from dork batches", async () => {
+  batchSearch.mockResolvedValue([
+    { results: [{ title: "Jane keynote at ConfX", link: "https://confx.com/jane", snippet: "talk" }] }, // talk
+    { results: [{ title: "Jane on a podcast", link: "https://pod.fm/jane", snippet: "ep 12" }] },       // podcast
+    { results: [{ title: "jane (GitHub)", link: "https://github.com/jane", snippet: "repos" }] },        // github
+    { results: [{ title: "Jane blog", link: "https://blog.com/jane", snippet: "post" }] },               // article
+  ]);
+  const out = await enrichPerson(person, { contacts: false });
+  const cats = out.webMentions.map((m) => m.category);
+  expect(cats).toContain("talk");
+  expect(cats).toContain("github");
+  expect(out.webMentions.find((m) => m.category === "github")?.url).toBe("https://github.com/jane");
+});
+
+test("web mentions degrade to [] when batchSearch throws", async () => {
+  batchSearch.mockRejectedValue(new Error("serp down"));
+  const out = await enrichPerson(person, { contacts: false });
+  expect(out.webMentions).toEqual([]);
+  expect(out.skills).toEqual(["TypeScript", "Distributed Systems"]); // backbone still landed
+});
