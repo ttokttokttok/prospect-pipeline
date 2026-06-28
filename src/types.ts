@@ -131,6 +131,12 @@ export interface Synthesis {
   interestProfile: InterestAxis[];
 }
 
+export interface PersonMetrics {
+  tenureMonths: number | null;
+  recentlyActive: boolean;
+  lastPostAt: string | null;
+}
+
 export const DEFAULT_ROLES = ["founder", "eng-leadership"];
 
 export function domainFromUrl(url: string | null): string | null {
