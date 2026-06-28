@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import type { EnrichedPerson, Synthesis, PersonMetrics } from "../../../src/types";
+import type { EnrichedPerson, Synthesis, PersonMetrics, EmailDraft } from "../../../src/types";
 import { Card, Badge, Button, Skeleton } from "../../../src/ui/primitives";
 import { InterestRadar } from "../../../src/ui/radar";
 
@@ -14,6 +14,9 @@ export default function DossierPage() {
   const [metrics, setMetrics] = useState<PersonMetrics | null>(null);
   const [synthLoading, setSynthLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [draft, setDraft] = useState<EmailDraft | null>(null);
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [needsProfile, setNeedsProfile] = useState(false);
 
   async function generate(force = false) {
     setSynthLoading(true);
@@ -33,10 +36,23 @@ export default function DossierPage() {
       setDossier(data.dossier);
       setSynthesis(data.synthesis);
       setMetrics(data.metrics);
+      setDraft(data.draft ?? null);
       if (!data.synthesis) generate();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  async function generateDraft(force = false) {
+    setDraftLoading(true);
+    setNeedsProfile(false);
+    try {
+      const res = await fetch(`/api/people/${id}/draft${force ? "?force=1" : ""}`, { method: "POST" });
+      if (res.status === 409) { setNeedsProfile(true); return; }
+      if (res.ok) setDraft((await res.json()).draft);
+    } finally {
+      setDraftLoading(false);
+    }
+  }
 
   function copyHooks() {
     if (!synthesis) return;
@@ -119,6 +135,38 @@ export default function DossierPage() {
           </>
         ) : (
           <div className="text-sm text-neutral-500">Couldn&apos;t generate hooks. <button className="underline" onClick={() => generate(true)}>Retry</button></div>
+        )}
+      </Card>
+
+      <Card className="mt-5 p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">✉ Cold-email draft</h2>
+          <div className="flex gap-2">
+            {draft && <Button className="bg-neutral-100 text-neutral-700 hover:bg-neutral-200" onClick={() => navigator.clipboard.writeText(`Subject: ${draft.subject}\n\n${draft.body}`).catch(() => {})}>Copy</Button>}
+            <Button className="bg-neutral-100 text-neutral-700 hover:bg-neutral-200" onClick={() => generateDraft(!!draft)} disabled={draftLoading}>
+              {draftLoading ? "Drafting…" : draft ? "Regenerate" : "Draft email"}
+            </Button>
+          </div>
+        </div>
+        {needsProfile ? (
+          <p className="text-sm text-neutral-600">Set up your <Link href="/settings" className="text-blue-600 underline">sender profile</Link> first to draft emails.</p>
+        ) : draftLoading && !draft ? (
+          <div className="space-y-2"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-20 w-full" /></div>
+        ) : draft ? (
+          <div className="space-y-2">
+            <input
+              value={draft.subject}
+              onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium"
+            />
+            <textarea
+              value={draft.body} rows={8}
+              onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-500">No draft yet — click &quot;Draft email&quot;.</p>
         )}
       </Card>
 
