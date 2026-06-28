@@ -1,10 +1,11 @@
 import { decodeId } from "../ids";
+import { computeMetrics } from "../pipeline/metrics";
 import { synthesize } from "../pipeline/synthesize";
 import { buildVoiceProfile } from "../pipeline/voice";
 import { generateComment } from "../pipeline/comment";
 import { generateMessage } from "../pipeline/message";
 import type { Repo } from "../storage/repo";
-import type { CommentDraft, EnrichedPerson, MessageDraft, PersonCard, Synthesis } from "../types";
+import type { CommentDraft, EnrichedPerson, MessageDraft, PersonCard, PersonMetrics, Synthesis } from "../types";
 
 export function listPeopleCards(repo: Repo): PersonCard[] {
   return repo.listPeople();
@@ -16,6 +17,7 @@ export function getPersonDetail(
 ): {
   dossier: EnrichedPerson;
   synthesis: Synthesis | null;
+  metrics: PersonMetrics;
   comment: CommentDraft | null;
   message: MessageDraft | null;
 } | null {
@@ -25,6 +27,7 @@ export function getPersonDetail(
   return {
     dossier,
     synthesis: repo.getSynthesis(url),
+    metrics: computeMetrics(dossier),
     comment: repo.getComment(url),
     message: repo.getMessage(url),
   };

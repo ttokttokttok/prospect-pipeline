@@ -8,9 +8,10 @@ Prompt → ICP companies → key people → enriched dossiers. Collected into a 
 
 ## CLI (local one-off)
 ```bash
-npm run prospect -- "Series A dev tool companies"          # cheap dry run (no contact lookups)
-npm run prospect -- "Series A dev tool companies" --contacts   # spends credits on emails/phones
+npm run prospect -- "Series A dev tool companies"                       # full run: posts + verified contacts (default-on)
+npm run prospect -- "Series A dev tool companies" --no-contacts --no-posts   # fast/cheap: skip contact lookups + post scraping
 ```
+Posts and contacts are collected by default; pass `--no-posts` / `--no-contacts` to skip either.
 Outputs land in `runs/<jobId>/`.
 
 ## Server
@@ -23,5 +24,6 @@ curl localhost:3000/api/runs/<jobId>   # poll status + counts
 ```
 
 ## Cost note
-`--contacts` calls `person.contact.get` (up to ~275 credits/person, ~10 min each, parallelized).
-Already-enriched people are skipped automatically (credit cache).
+By default each run calls `person.contact.get` (up to ~275 credits/person, ~10 min each, parallelized) —
+pass `--no-contacts` for a fast run without verified emails/phones. Already-enriched people are
+skipped automatically (credit cache).
