@@ -32,7 +32,9 @@ test("needsContact is true for new person, false after enrich", () => {
   expect(repo.needsContact(url)).toBe(true);
   const person: EnrichedPerson = {
     linkedinUrl: url, companyDomain: "x.com", name: "Jane", title: "CTO",
-    twitter: null, workEmail: "jane@x.com", personalEmail: null, phone: null, headline: null, signals: [],
+    headline: null, twitter: null, workEmail: "jane@x.com", personalEmail: null, phone: null,
+    skills: [], experience: [], education: [], certifications: [], languages: [],
+    isInfluencer: false, jobsCount: null, recommenderCount: null, posts: [], webMentions: [], rawProfile: null,
   };
   repo.upsertPerson(person);
   expect(repo.needsContact(url)).toBe(false);

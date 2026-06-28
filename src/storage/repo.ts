@@ -1,5 +1,5 @@
 import type { Db } from "./db";
-import type { Company, EnrichedPerson, Job, Progress, RunParams, Signal } from "../types";
+import type { Company, EnrichedPerson, Job, Progress, RunParams } from "../types";
 
 const EMPTY_PROGRESS: Progress = { stage: "queued", companies: 0, people: 0, contacts: 0 };
 
@@ -81,15 +81,9 @@ export class Repo {
     return !p || p.lastEnrichedAt === null;
   }
 
-  addSignals(linkedinUrl: string, signals: Signal[]): void {
-    const stmt = this.db.prepare(
-      `INSERT INTO signals (person_linkedin_url, source, content, url, fetched_at) VALUES (?, ?, ?, ?, ?)`,
-    );
-    const now = new Date().toISOString();
-    const tx = this.db.transaction((items: Signal[]) => {
-      for (const s of items) stmt.run(linkedinUrl, s.source, s.content, s.url, now);
-    });
-    tx(signals);
+  // addSignals restored in Task 3 (signals schema rework)
+  addSignals(_linkedinUrl: string, _signals: unknown[]): void {
+    // signals persisted in Task 3
   }
 }
 
