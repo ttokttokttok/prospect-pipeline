@@ -46,5 +46,30 @@ test("includes dossier facts in the prompt (skills + post text)", async () => {
 test("degrades to an empty synthesis on failure", async () => {
   generateObject.mockRejectedValueOnce(new Error("ai down"));
   const out = await synthesize(person);
-  expect(out).toEqual({ summary: "", interests: [], hooks: [] });
+  expect(out).toEqual({ summary: "", interests: [], hooks: [], currentFocus: "", interestProfile: [] });
+});
+
+test("maps currentFocus and interestProfile (with numeric score coercion)", async () => {
+  generateObject.mockResolvedValue({ object: {
+    summary: "x", interests: [], hooks: [],
+    currentFocus: "Shipping Acme's infra platform",
+    interestProfile: [
+      { category: "Infrastructure", score: 90 },
+      { category: "Developer Experience", score: "75" }, // string → number
+      { category: "", score: 50 },                        // empty category dropped
+    ],
+  } });
+  const out = await synthesize(person);
+  expect(out.currentFocus).toBe("Shipping Acme's infra platform");
+  expect(out.interestProfile).toEqual([
+    { category: "Infrastructure", score: 90 },
+    { category: "Developer Experience", score: 75 },
+  ]);
+});
+
+test("currentFocus/interestProfile degrade to empty on failure", async () => {
+  generateObject.mockRejectedValueOnce(new Error("ai down"));
+  const out = await synthesize(person);
+  expect(out.currentFocus).toBe("");
+  expect(out.interestProfile).toEqual([]);
 });
