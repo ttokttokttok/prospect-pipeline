@@ -139,6 +139,21 @@ export interface PersonMetrics {
 
 export const DEFAULT_ROLES = ["founder", "eng-leadership"];
 
+export interface SenderProfile {
+  senderName: string;
+  senderCompany: string;
+  offer: string;
+  valueProp: string;
+  socialProof: string;
+  cta: string;
+  tone: string;
+}
+
+export interface EmailDraft {
+  subject: string;
+  body: string;
+}
+
 export function domainFromUrl(url: string | null): string | null {
   if (!url) return null;
   try {
