@@ -158,3 +158,19 @@ Persisted as a `dossier` JSON column on `people` (read by the Phase 2 UI) + `peo
 ### Phase 1 follow-ups (none blocking)
 - **Twitter/X posts deferred** — `Post.source: "twitter"` exists but no Twitter actor runs yet (Phase 2 candidate; handles are often null anyway).
 - Small cleanup ticket: drop `(services as any).apify` casts; add tests for CSV escaping of new cells, `addSignals` row insertion, and the posts `url`/`postedAt` mapping; tighten multi-part TLD handling in the dork company term.
+
+---
+
+## Phase 2 — Dossier UI + AI hooks (DONE, merged)
+
+A web UI to browse prospects and understand each fast for cold emails.
+
+- **Run it:** `npm run dev` → http://localhost:3000. A **people list** (cards: name, title, company, skills); a prompt box kicks off a run. Click a card → **dossier page**.
+- **Dossier centerpiece:** an **AI synthesis** (summary + interest tags + 2-3 grounded cold-email **hooks**) generated via Orange Slice `ai.generateObject` (no OpenAI key), **on-demand + cached** in a new `people.synthesis` column. "Copy hooks" + "Regenerate" (force-bypasses cache). Below it: skills, experience timeline, education, recent posts, web footprint, contact links. Empty sections are hidden.
+- **API:** `GET /api/people`, `GET /api/people/[id]`, `POST /api/people/[id]/synthesize[?force=1]`. People are addressed by a base64url-encoded id. Backend logic is TDD'd (`src/pipeline/synthesize.ts`, `src/server/people.ts`); routes + React pages are build-verified.
+- **Verified live:** seeded 44 people, synthesis produced accurate, grounded hooks; cache hit ~33ms vs forced regenerate ~25s.
+- **Stack added:** Tailwind v4 + lightweight local components in `src/ui/primitives.tsx` (no shadcn CLI).
+
+### Phase 2 follow-ups (none blocking)
+- Dossier shows email inline in the header but no `phone`/Contact section; clipboard write isn't `.catch()`'d; `interests` aren't per-item string-coerced (rare React key warning); a few index keys / no AbortController on unmount. All cosmetic.
+- **Next phase (per Josh): cold-email *drafting/curation*** — Phase 2 gives the hooks (the angle); turning a hook into a finished, editable email draft is the planned next step.
