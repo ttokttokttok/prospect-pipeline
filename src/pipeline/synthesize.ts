@@ -45,8 +45,10 @@ export async function synthesize(person: EnrichedPerson): Promise<Synthesis> {
         `write a short professional summary, the person's interest themes, and 2-3 specific cold-email ` +
         `hooks. Each hook's "why" MUST cite a specific fact below. Do NOT fabricate anything.\n\n${facts}`,
       schema: SCHEMA,
+      // `intelligence` is a documented runtime param but absent from the SDK's
+      // published GenerateObjectOptions type; cast to keep "medium" at runtime.
       intelligence: "medium",
-    });
+    } as Parameters<typeof services.ai.generateObject>[0]);
     return {
       summary: typeof object.summary === "string" ? object.summary : "",
       interests: Array.isArray(object.interests) ? object.interests : [],
