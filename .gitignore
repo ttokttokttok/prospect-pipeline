@@ -2,7 +2,7 @@ node_modules/
 .next/
 .env.local
 .env
-prospect.db
+# prospect.db is committed (demo data); only the transient WAL/SHM files are ignored
 prospect.db-*
 /runs/
 *.log
