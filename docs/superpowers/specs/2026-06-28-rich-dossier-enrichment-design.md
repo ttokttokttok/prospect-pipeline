@@ -82,10 +82,19 @@ export interface WebMention {
 //   certifications: string[]
 //   languages: string[]
 //   isInfluencer: boolean
+//   jobsCount: number | null
+//   recommenderCount: number | null
 //   posts: Post[]
 //   webMentions: WebMention[]
+//   rawProfile: Record<string, unknown> | null  // the FULL extended enrich payload, nothing discarded
 // (existing fields stay: headline, twitter, workEmail, personalEmail, phone, signals)
 ```
+
+**Capture-everything principle:** the curated/typed fields above are what the Phase 2 UI renders
+first, but we also store the *entire* `B2BPersonExtended` payload verbatim in `rawProfile` (and the
+raw Apify post items + raw dork results inside `posts`/`webMentions` where shape allows). Nothing the
+providers return is thrown away — so the UI (and the later cold-email phase) can surface any field
+(awards, publications, projects, volunteering, articles, patents, languages…) without re-enriching.
 
 `signals` (the existing flat array) stays for backward-compatibility but is superseded by
 `posts` + `webMentions`; `run.ts` continues to populate the `signals` table from them.
