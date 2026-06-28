@@ -66,3 +66,11 @@ test("getOrCreateSynthesis does not cache empty synthesis and retries on next ca
   expect(gen).toHaveBeenCalledTimes(2); // called again since not cached
   expect(second).toEqual(emptySynth);
 });
+
+test("getPersonDetail includes computed metrics", () => {
+  const detail = getPersonDetail(repo, encodeId(url))!;
+  expect(detail.metrics).toBeDefined();
+  expect(detail.metrics).toHaveProperty("tenureMonths");
+  expect(detail.metrics).toHaveProperty("recentlyActive");
+  expect(detail.metrics).toHaveProperty("lastPostAt");
+});

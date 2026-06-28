@@ -1,7 +1,8 @@
 import { decodeId } from "../ids";
+import { computeMetrics } from "../pipeline/metrics";
 import { synthesize } from "../pipeline/synthesize";
 import type { Repo } from "../storage/repo";
-import type { EnrichedPerson, PersonCard, Synthesis } from "../types";
+import type { EnrichedPerson, PersonCard, PersonMetrics, Synthesis } from "../types";
 
 export function listPeopleCards(repo: Repo): PersonCard[] {
   return repo.listPeople();
@@ -10,10 +11,11 @@ export function listPeopleCards(repo: Repo): PersonCard[] {
 export function getPersonDetail(
   repo: Repo,
   id: string,
-): { dossier: EnrichedPerson; synthesis: Synthesis | null } | null {
-  const dossier = repo.getDossier(decodeId(id));
+): { dossier: EnrichedPerson; synthesis: Synthesis | null; metrics: PersonMetrics } | null {
+  const url = decodeId(id);
+  const dossier = repo.getDossier(url);
   if (!dossier) return null;
-  return { dossier, synthesis: repo.getSynthesis(decodeId(id)) };
+  return { dossier, synthesis: repo.getSynthesis(url), metrics: computeMetrics(dossier) };
 }
 
 export async function getOrCreateSynthesis(
