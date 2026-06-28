@@ -152,19 +152,23 @@ export default function DossierPage() {
           <p className="text-sm text-neutral-600">Set up your <Link href="/settings" className="text-blue-600 underline">sender profile</Link> first to draft emails.</p>
         ) : draftLoading && !draft ? (
           <div className="space-y-2"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-20 w-full" /></div>
-        ) : draft ? (
+        ) : draft && (draft.subject || draft.body) ? (
           <div className="space-y-2">
             <input
+              aria-label="Email subject"
               value={draft.subject}
               onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
               className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium"
             />
             <textarea
+              aria-label="Email body"
               value={draft.body} rows={8}
               onChange={(e) => setDraft({ ...draft, body: e.target.value })}
               className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
             />
           </div>
+        ) : draft ? (
+          <div className="text-sm text-neutral-500">Couldn&apos;t draft an email. <button className="underline" onClick={() => generateDraft(true)}>Retry</button></div>
         ) : (
           <p className="text-sm text-neutral-500">No draft yet — click &quot;Draft email&quot;.</p>
         )}
