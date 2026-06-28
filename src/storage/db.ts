@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS people (
   phone TEXT,
   last_enriched_at TEXT,
   dossier TEXT,
-  synthesis TEXT
+  synthesis TEXT,
+  draft TEXT
 );
 CREATE TABLE IF NOT EXISTS signals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,6 +40,10 @@ CREATE TABLE IF NOT EXISTS signals (
   content TEXT,
   url TEXT,
   fetched_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT
 );
 `;
 
@@ -50,6 +55,7 @@ export function openDb(path = process.env.PROSPECT_DB_PATH ?? "./prospect.db") {
   const cols = db.prepare("PRAGMA table_info(people)").all() as { name: string }[];
   if (!cols.some((c) => c.name === "dossier")) db.exec("ALTER TABLE people ADD COLUMN dossier TEXT");
   if (!cols.some((c) => c.name === "synthesis")) db.exec("ALTER TABLE people ADD COLUMN synthesis TEXT");
+  if (!cols.some((c) => c.name === "draft")) db.exec("ALTER TABLE people ADD COLUMN draft TEXT");
   return db;
 }
 

@@ -1,5 +1,5 @@
 import type { Db } from "./db";
-import type { Company, EnrichedPerson, Job, PersonCard, Progress, RunParams, Synthesis } from "../types";
+import type { Company, EmailDraft, EnrichedPerson, Job, PersonCard, Progress, RunParams, SenderProfile, Synthesis } from "../types";
 import { encodeId } from "../ids";
 
 const EMPTY_PROGRESS: Progress = { stage: "queued", companies: 0, people: 0, contacts: 0 };
@@ -122,6 +122,26 @@ export class Repo {
 
   setSynthesis(linkedinUrl: string, s: Synthesis): void {
     this.db.prepare("UPDATE people SET synthesis = ? WHERE linkedin_url = ?").run(JSON.stringify(s), linkedinUrl);
+  }
+
+  getSenderProfile(): SenderProfile | null {
+    const row = this.db.prepare("SELECT value FROM settings WHERE key = 'sender_profile'").get() as any;
+    return row?.value ? (JSON.parse(row.value) as SenderProfile) : null;
+  }
+
+  setSenderProfile(p: SenderProfile): void {
+    this.db
+      .prepare("INSERT INTO settings (key, value) VALUES ('sender_profile', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .run(JSON.stringify(p));
+  }
+
+  getDraft(linkedinUrl: string): EmailDraft | null {
+    const row = this.db.prepare("SELECT draft FROM people WHERE linkedin_url = ?").get(linkedinUrl) as any;
+    return row?.draft ? (JSON.parse(row.draft) as EmailDraft) : null;
+  }
+
+  setDraft(linkedinUrl: string, d: EmailDraft): void {
+    this.db.prepare("UPDATE people SET draft = ? WHERE linkedin_url = ?").run(JSON.stringify(d), linkedinUrl);
   }
 
   addSignals(linkedinUrl: string, signals: { source: "linkedin" | "twitter" | "web"; content: string; url: string }[]): void {

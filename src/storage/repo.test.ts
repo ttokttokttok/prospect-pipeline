@@ -91,3 +91,26 @@ test("getSynthesis/setSynthesis round-trip and flip hasSynthesis", () => {
   expect(repo.getSynthesis(url)!.hooks[0].angle).toBe("x");
   expect(repo.listPeople()[0].hasSynthesis).toBe(true);
 });
+
+test("sender profile round-trips via settings", () => {
+  expect(repo.getSenderProfile()).toBeNull();
+  const profile = { senderName: "Sam", senderCompany: "DeployCo", offer: "CI", valueProp: "fast", socialProof: "Stripe", cta: "call?", tone: "warm" };
+  repo.setSenderProfile(profile);
+  expect(repo.getSenderProfile()).toEqual(profile);
+  // upsert overwrites
+  repo.setSenderProfile({ ...profile, offer: "CD" });
+  expect(repo.getSenderProfile()!.offer).toBe("CD");
+});
+
+test("draft round-trips on the person row", () => {
+  const url = "https://linkedin.com/in/jane";
+  repo.upsertPerson({
+    linkedinUrl: url, companyDomain: "acme.com", name: "Jane", title: "CTO", headline: null, twitter: null,
+    workEmail: null, personalEmail: null, phone: null, skills: [], experience: [], education: [],
+    certifications: [], languages: [], isInfluencer: false, jobsCount: null, recommenderCount: null,
+    posts: [], webMentions: [], rawProfile: null,
+  } as any);
+  expect(repo.getDraft(url)).toBeNull();
+  repo.setDraft(url, { subject: "Hi", body: "Body" });
+  expect(repo.getDraft(url)).toEqual({ subject: "Hi", body: "Body" });
+});
