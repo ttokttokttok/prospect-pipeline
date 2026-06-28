@@ -143,3 +143,18 @@ PROSPECT_E2E=1 npx vitest run src/e2e.test.ts   # real dry run, no contacts; nee
 ls runs/e2e/                                     # companies.csv, people.csv, people.json
 ```
 If that produces ~20 companies and dozens of people, you're good.
+
+---
+
+## Phase 1 — Rich Dossier (DONE, merged)
+
+`enrichPerson` now collects a structured dossier (all via Orange Slice):
+- **Backbone** (reliable, ~1 credit): `enrich({extended:true})` → `skills`, `experience[]`, `education[]`, `certifications[]`, `languages[]`, `isInfluencer`, `jobsCount`, `recommenderCount`, plus the full `rawProfile` (nothing discarded).
+- **Web footprint**: categorized dorks → `webMentions[]` (talk/podcast/github/article).
+- **Posts (gated)**: `--posts` flag runs the live-validated Apify actor `harvestapi/linkedin-profile-posts` → `posts[]`. Dry runs do NOT call Apify (no surprise cost).
+
+Persisted as a `dossier` JSON column on `people` (read by the Phase 2 UI) + `people.json`; CSV gains `skills`/`top_post`/`mentions_count`. Run with `--posts` to include LinkedIn posts.
+
+### Phase 1 follow-ups (none blocking)
+- **Twitter/X posts deferred** — `Post.source: "twitter"` exists but no Twitter actor runs yet (Phase 2 candidate; handles are often null anyway).
+- Small cleanup ticket: drop `(services as any).apify` casts; add tests for CSV escaping of new cells, `addSignals` row insertion, and the posts `url`/`postedAt` mapping; tighten multi-part TLD handling in the dork company term.

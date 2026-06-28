@@ -23,25 +23,62 @@ export interface Person {
   title: string | null;
 }
 
-export interface Signal {
-  source: "linkedin" | "twitter" | "web";
-  content: string;
+export interface Experience {
+  title: string;
+  company: string;
+  companyDomain: string | null;
+  isCurrent: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  summary: string | null;
+}
+
+export interface Education {
+  school: string;
+  degree: string | null;
+  field: string | null;
+  endYear: number | null;
+}
+
+export interface Post {
+  source: "linkedin" | "twitter";
+  text: string;
+  url: string | null;
+  postedAt: string | null;
+  likes: number | null;
+}
+
+export interface WebMention {
+  category: "talk" | "podcast" | "github" | "article" | "web";
+  title: string;
   url: string;
+  snippet: string | null;
 }
 
 export interface EnrichedPerson extends Person {
+  headline: string | null;
   twitter: string | null;
   workEmail: string | null;
   personalEmail: string | null;
   phone: string | null;
-  headline: string | null;
-  signals: Signal[];
+  skills: string[];
+  experience: Experience[];
+  education: Education[];
+  certifications: string[];
+  languages: string[];
+  isInfluencer: boolean;
+  jobsCount: number | null;
+  recommenderCount: number | null;
+  posts: Post[];
+  webMentions: WebMention[];
+  rawProfile: Record<string, unknown> | null;
 }
 
 export interface RunParams {
   prompt: string;
   contacts: boolean;
   roles: string[];
+  posts: boolean;
 }
 
 export type JobStatus = "queued" | "running" | "completed" | "failed";

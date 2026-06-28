@@ -20,8 +20,13 @@ export function companiesCsv(companies: Company[]): string {
 
 export function peopleCsv(people: EnrichedPerson[]): string {
   return toCsv(
-    ["name", "title", "company", "linkedin", "twitter", "work_email", "personal_email", "phone"],
-    people.map((p) => [p.name, p.title, p.companyDomain, p.linkedinUrl, p.twitter, p.workEmail, p.personalEmail, p.phone]),
+    ["name", "title", "company", "linkedin", "twitter", "work_email", "personal_email", "phone", "skills", "top_post", "mentions_count"],
+    people.map((p) => [
+      p.name, p.title, p.companyDomain, p.linkedinUrl, p.twitter, p.workEmail, p.personalEmail, p.phone,
+      p.skills.join("; "),
+      p.posts[0]?.text ?? "",
+      p.webMentions.length,
+    ]),
   );
 }
 

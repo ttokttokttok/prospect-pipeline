@@ -5,13 +5,14 @@ import { DEFAULT_ROLES, type RunParams } from "../src/types";
 function parseArgs(argv: string[]): RunParams {
   const prompt = argv.find((a) => !a.startsWith("--"));
   if (!prompt) {
-    console.error('Usage: npm run prospect -- "Series A dev tool companies" [--contacts] [--roles=founder,eng-leadership]');
+    console.error('Usage: npm run prospect -- "Series A dev tool companies" [--contacts] [--posts] [--roles=founder,eng-leadership]');
     process.exit(1);
   }
   const rolesArg = argv.find((a) => a.startsWith("--roles="));
   return {
     prompt,
     contacts: argv.includes("--contacts"),
+    posts: argv.includes("--posts"),
     roles: rolesArg ? rolesArg.slice("--roles=".length).split(",") : DEFAULT_ROLES,
   };
 }

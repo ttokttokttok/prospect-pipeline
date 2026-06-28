@@ -44,14 +44,18 @@ export async function runPipeline(
     let contacts = 0;
     const results = await Promise.allSettled(
       people.map((p) =>
-        enrichPerson(p, { contacts: params.contacts, skipContact: !repo.needsContact(p.linkedinUrl) }),
+        enrichPerson(p, { contacts: params.contacts, skipContact: !repo.needsContact(p.linkedinUrl), posts: params.posts }),
       ),
     );
     for (const r of results) {
       if (r.status === "fulfilled") {
         const ep = r.value;
         repo.upsertPerson(ep);
-        if (ep.signals.length) repo.addSignals(ep.linkedinUrl, ep.signals);
+        const sigs = [
+          ...ep.posts.map((p) => ({ source: p.source as "linkedin" | "twitter", content: p.text, url: p.url ?? "" })),
+          ...ep.webMentions.map((m) => ({ source: "web" as const, content: m.snippet ?? m.title, url: m.url })),
+        ];
+        if (sigs.length) repo.addSignals(ep.linkedinUrl, sigs);
         if (ep.workEmail || ep.personalEmail || ep.phone) contacts++;
         enriched.push(ep);
       }

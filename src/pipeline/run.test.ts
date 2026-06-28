@@ -33,7 +33,9 @@ beforeEach(() => {
   ]);
   enrichPerson.mockResolvedValue({
     linkedinUrl: "https://linkedin.com/in/jane", companyDomain: "acme.com", name: "Jane", title: "CTO",
-    twitter: null, workEmail: null, personalEmail: null, phone: null, headline: null, signals: [],
+    headline: null, twitter: null, workEmail: null, personalEmail: null, phone: null,
+    skills: [], experience: [], education: [], certifications: [], languages: [],
+    isInfluencer: false, jobsCount: null, recommenderCount: null, posts: [], webMentions: [], rawProfile: null,
   });
   writeRun.mockResolvedValue(undefined);
 });
@@ -63,7 +65,7 @@ test("one bad person does not fail the whole run", async () => {
     { linkedinUrl: "https://linkedin.com/in/bad", companyDomain: "acme.com", name: "Bad", title: "CEO" },
   ]);
   enrichPerson
-    .mockResolvedValueOnce({ linkedinUrl: "https://linkedin.com/in/ok", companyDomain: "acme.com", name: "OK", title: "CTO", twitter: null, workEmail: null, personalEmail: null, phone: null, headline: null, signals: [] })
+    .mockResolvedValueOnce({ linkedinUrl: "https://linkedin.com/in/ok", companyDomain: "acme.com", name: "OK", title: "CTO", headline: null, twitter: null, workEmail: null, personalEmail: null, phone: null, skills: [], experience: [], education: [], certifications: [], languages: [], isInfluencer: false, jobsCount: null, recommenderCount: null, posts: [], webMentions: [], rawProfile: null })
     .mockRejectedValueOnce(new Error("enrich boom"));
   repo.createJob("job3", params);
   await runPipeline("job3", params, repo, "/tmp/prospect-test");

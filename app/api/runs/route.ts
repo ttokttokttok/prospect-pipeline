@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     prompt: body.prompt,
     contacts: body.contacts === true,
     roles: Array.isArray(body.roles) && body.roles.length ? body.roles : DEFAULT_ROLES,
+    posts: body.posts === true,
   });
   return NextResponse.json({ jobId }, { status: 201 });
 }
