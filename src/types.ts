@@ -101,6 +101,18 @@ export interface Job {
   finishedAt: string | null;
 }
 
+export interface PersonCard {
+  id: string;
+  linkedinUrl: string;
+  name: string;
+  title: string | null;
+  companyDomain: string;
+  twitter: string | null;
+  skills: string[];
+  isInfluencer: boolean;
+  hasSynthesis: boolean;
+}
+
 export interface Hook {
   angle: string;
   why: string;
