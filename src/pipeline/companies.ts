@@ -32,10 +32,17 @@ export async function discoverCompanies(icp: ICP, limit = 20): Promise<Company[]
   // Score each independently (one generateObject call per company).
   const scored = await Promise.all(
     raw.map(async (c): Promise<Company> => {
+      // Crunchbase-sourced companies are already filtered to the ICP's funding
+      // stage, so tell the scorer it's verified — otherwise it hedges ("can't
+      // confirm Series A") about a fact we've already confirmed via the query.
+      const verified =
+        c.source === "crunchbase" && icp.fundingStage
+          ? `\nVerified funding stage (via Crunchbase): ${icp.fundingStage}`
+          : "";
       const { object } = await services.ai.generateObject({
         prompt:
           `Score how well this company fits the ICP (0-100) and explain in one sentence. Do not fabricate.\n\n` +
-          `ICP: ${JSON.stringify(icp)}\n\nCompany: ${c.name} — ${c.description ?? "(no description)"} (${c.domain})`,
+          `ICP: ${JSON.stringify(icp)}\n\nCompany: ${c.name} — ${c.description ?? "(no description)"} (${c.domain})${verified}`,
         schema: SCORE_SCHEMA,
       });
       return {

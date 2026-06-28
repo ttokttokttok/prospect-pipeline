@@ -74,6 +74,17 @@ test("crunchbase query matches ALL keywords, not just the first", async () => {
   expect(sql).toContain("last_funding_type = 'series_a'");
 });
 
+test("scoring prompt tells the scorer the funding stage is verified for crunchbase companies", async () => {
+  cbSearch.mockResolvedValue([
+    { name: "Acme", website_url: "https://acme.com", linkedin_url: null, short_description: "dev tool" },
+  ]);
+  webSearch.mockResolvedValue({ results: [] });
+  await discoverCompanies(icp, 20);
+  const prompt = generateObject.mock.calls[0][0].prompt as string;
+  expect(prompt).toContain("Verified funding stage");
+  expect(prompt).toContain("series_a");
+});
+
 test("returns crunchbase results even when web.search rejects", async () => {
   cbSearch.mockResolvedValue([
     { name: "Acme", website_url: "https://acme.com", linkedin_url: null, short_description: "dev tool" },
