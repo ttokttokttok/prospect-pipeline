@@ -18,8 +18,21 @@ const SCHEMA = {
       },
       description: "2-3 cold-email hooks, each grounded in a real fact below.",
     },
+    currentFocus: { type: "string", description: "One sentence: what this person is working on/focused on RIGHT NOW, from their current role + most recent posts." },
+    interestProfile: {
+      type: "array",
+      description: "5-7 professional interest categories you choose from the evidence, each scored 0-100 by how strongly the facts support it. Do not fabricate categories.",
+      items: {
+        type: "object",
+        properties: {
+          category: { type: "string" },
+          score: { type: "number", description: "0-100 intensity." },
+        },
+        required: ["category", "score"],
+      },
+    },
   },
-  required: ["summary", "interests", "hooks"],
+  required: ["summary", "interests", "hooks", "currentFocus", "interestProfile"],
 };
 
 export async function synthesize(person: EnrichedPerson): Promise<Synthesis> {
@@ -42,7 +55,7 @@ export async function synthesize(person: EnrichedPerson): Promise<Synthesis> {
     const { object } = await services.ai.generateObject({
       prompt:
         `You help write personalized B2B cold-email openers. Based ONLY on the facts below, ` +
-        `write a short professional summary, the person's interest themes, and 2-3 specific cold-email ` +
+        `write a short professional summary, the person's interest themes, a one-sentence current focus, a 5-7 category interest profile scored 0-100, and 2-3 specific cold-email ` +
         `hooks. Each hook's "why" MUST cite a specific fact below. Do NOT fabricate anything.\n\n${facts}`,
       schema: SCHEMA,
       // `intelligence` is a documented runtime param but absent from the SDK's
@@ -57,8 +70,14 @@ export async function synthesize(person: EnrichedPerson): Promise<Synthesis> {
             .map((h: any) => ({ angle: String(h?.angle ?? ""), why: String(h?.why ?? "") }))
             .filter((h: any) => h.angle)
         : [],
+      currentFocus: typeof object.currentFocus === "string" ? object.currentFocus : "",
+      interestProfile: Array.isArray(object.interestProfile)
+        ? object.interestProfile
+            .map((a: any) => ({ category: String(a?.category ?? ""), score: Number(a?.score) || 0 }))
+            .filter((a: any) => a.category)
+        : [],
     };
   } catch {
-    return { summary: "", interests: [], hooks: [] };
+    return { summary: "", interests: [], hooks: [], currentFocus: "", interestProfile: [] };
   }
 }

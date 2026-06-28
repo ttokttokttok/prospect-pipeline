@@ -118,10 +118,17 @@ export interface Hook {
   why: string;
 }
 
+export interface InterestAxis {
+  category: string;
+  score: number;
+}
+
 export interface Synthesis {
   summary: string;
   interests: string[];
   hooks: Hook[];
+  currentFocus: string;
+  interestProfile: InterestAxis[];
 }
 
 export const DEFAULT_ROLES = ["founder", "eng-leadership"];
