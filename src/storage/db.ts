@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS people (
   last_enriched_at TEXT,
   dossier TEXT,
   synthesis TEXT,
-  comment TEXT
+  comment TEXT,
+  message TEXT
 );
 CREATE TABLE IF NOT EXISTS signals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,6 +53,7 @@ export function openDb(path = process.env.PROSPECT_DB_PATH ?? "./prospect.db") {
   if (!cols.some((c) => c.name === "dossier")) db.exec("ALTER TABLE people ADD COLUMN dossier TEXT");
   if (!cols.some((c) => c.name === "synthesis")) db.exec("ALTER TABLE people ADD COLUMN synthesis TEXT");
   if (!cols.some((c) => c.name === "comment")) db.exec("ALTER TABLE people ADD COLUMN comment TEXT");
+  if (!cols.some((c) => c.name === "message")) db.exec("ALTER TABLE people ADD COLUMN message TEXT");
   return db;
 }
 

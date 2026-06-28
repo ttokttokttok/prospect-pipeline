@@ -67,7 +67,12 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-5xl p-6">
-      <h1 className="mb-1 text-2xl font-bold">Prospect</h1>
+      <div className="mb-1 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Prospect</h1>
+        <Link href="/workspace" className="rounded-lg bg-[#F25C1F] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#DB4F15]">
+          Open Champion Workspace →
+        </Link>
+      </div>
       <p className="mb-6 text-sm text-neutral-500">Browse collected prospects and their cold-email hooks.</p>
 
       <div className="mb-6 flex gap-2">

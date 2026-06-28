@@ -1,5 +1,5 @@
 import type { Db } from "./db";
-import type { Company, CommentDraft, EnrichedPerson, Job, PersonCard, Progress, RunParams, Synthesis } from "../types";
+import type { Company, CommentDraft, EnrichedPerson, Job, MessageDraft, PersonCard, Progress, RunParams, Synthesis } from "../types";
 import { encodeId } from "../ids";
 
 const EMPTY_PROGRESS: Progress = { stage: "queued", companies: 0, people: 0, contacts: 0 };
@@ -131,6 +131,15 @@ export class Repo {
 
   setComment(linkedinUrl: string, c: CommentDraft): void {
     this.db.prepare("UPDATE people SET comment = ? WHERE linkedin_url = ?").run(JSON.stringify(c), linkedinUrl);
+  }
+
+  getMessage(linkedinUrl: string): MessageDraft | null {
+    const row = this.db.prepare("SELECT message FROM people WHERE linkedin_url = ?").get(linkedinUrl) as any;
+    return row?.message ? (JSON.parse(row.message) as MessageDraft) : null;
+  }
+
+  setMessage(linkedinUrl: string, m: MessageDraft): void {
+    this.db.prepare("UPDATE people SET message = ? WHERE linkedin_url = ?").run(JSON.stringify(m), linkedinUrl);
   }
 
   addSignals(linkedinUrl: string, signals: { source: "linkedin" | "twitter" | "web"; content: string; url: string }[]): void {

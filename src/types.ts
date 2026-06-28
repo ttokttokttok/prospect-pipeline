@@ -140,6 +140,12 @@ export interface CommentDraft {
   postAngles: string[]; // secondary broadcast-post angles
 }
 
+// A drafted 1:1 message (LinkedIn DM or email) in the founder's voice.
+export interface MessageDraft {
+  message: string; // the body, works as DM or email
+  subject: string; // only used when sent as email
+}
+
 export const DEFAULT_ROLES = ["founder", "eng-leadership"];
 
 export function domainFromUrl(url: string | null): string | null {
