@@ -5,9 +5,10 @@ import { getOrCreateSynthesis } from "../../../../../src/server/people";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const synthesis = await getOrCreateSynthesis(getRepo(), id);
+  const force = new URL(req.url).searchParams.get("force") === "1";
+  const synthesis = await getOrCreateSynthesis(getRepo(), id, undefined, force);
   if (!synthesis) return NextResponse.json({ error: "not found" }, { status: 404 });
   return NextResponse.json({ synthesis });
 }

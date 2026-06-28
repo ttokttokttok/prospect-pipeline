@@ -20,13 +20,13 @@ export async function getOrCreateSynthesis(
   repo: Repo,
   id: string,
   gen: (p: EnrichedPerson) => Promise<Synthesis> = synthesize,
+  force = false,
 ): Promise<Synthesis | null> {
   const url = decodeId(id);
-  const cached = repo.getSynthesis(url);
-  if (cached) return cached;
+  if (!force) { const cached = repo.getSynthesis(url); if (cached) return cached; }
   const dossier = repo.getDossier(url);
   if (!dossier) return null;
   const s = await gen(dossier);
-  repo.setSynthesis(url, s);
+  if (s.summary || s.hooks.length) repo.setSynthesis(url, s);
   return s;
 }

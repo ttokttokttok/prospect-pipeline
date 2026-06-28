@@ -13,10 +13,10 @@ export default function DossierPage() {
   const [synthLoading, setSynthLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
-  async function generate() {
+  async function generate(force = false) {
     setSynthLoading(true);
     try {
-      const res = await fetch(`/api/people/${id}/synthesize`, { method: "POST" });
+      const res = await fetch(`/api/people/${id}/synthesize${force ? "?force=1" : ""}`, { method: "POST" });
       if (res.ok) setSynthesis((await res.json()).synthesis);
     } finally {
       setSynthLoading(false);
@@ -69,7 +69,7 @@ export default function DossierPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">✦ AI summary</h2>
           <div className="flex gap-2">
             <Button className="bg-neutral-100 text-neutral-700 hover:bg-neutral-200" onClick={copyHooks}>Copy hooks</Button>
-            <Button className="bg-neutral-100 text-neutral-700 hover:bg-neutral-200" onClick={generate} disabled={synthLoading}>Regenerate</Button>
+            <Button className="bg-neutral-100 text-neutral-700 hover:bg-neutral-200" onClick={() => generate(true)} disabled={synthLoading}>Regenerate</Button>
           </div>
         </div>
         {synthLoading && !synthesis ? (
@@ -94,7 +94,7 @@ export default function DossierPage() {
             )}
           </>
         ) : (
-          <div className="text-sm text-neutral-500">Couldn&apos;t generate hooks. <button className="underline" onClick={generate}>Retry</button></div>
+          <div className="text-sm text-neutral-500">Couldn&apos;t generate hooks. <button className="underline" onClick={() => generate(true)}>Retry</button></div>
         )}
       </Card>
 

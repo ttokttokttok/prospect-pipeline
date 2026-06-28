@@ -44,3 +44,25 @@ test("getOrCreateSynthesis returns null for unknown id", async () => {
   expect(await getOrCreateSynthesis(repo, encodeId("https://x/none"), gen)).toBeNull();
   expect(gen).not.toHaveBeenCalled();
 });
+
+test("getOrCreateSynthesis with force=true bypasses cache and overwrites", async () => {
+  const gen = vi.fn().mockResolvedValue({ summary: "first", interests: [], hooks: [] });
+  await getOrCreateSynthesis(repo, encodeId(url), gen); // populate cache
+  expect(gen).toHaveBeenCalledTimes(1);
+  gen.mockResolvedValue({ summary: "forced", interests: [], hooks: [] });
+  const result = await getOrCreateSynthesis(repo, encodeId(url), gen, true);
+  expect(gen).toHaveBeenCalledTimes(2);
+  expect(result!.summary).toBe("forced");
+  expect(repo.getSynthesis(url)!.summary).toBe("forced");
+});
+
+test("getOrCreateSynthesis does not cache empty synthesis and retries on next call", async () => {
+  const emptySynth = { summary: "", interests: [], hooks: [] };
+  const gen = vi.fn().mockResolvedValue(emptySynth);
+  const first = await getOrCreateSynthesis(repo, encodeId(url), gen);
+  expect(first).toEqual(emptySynth);
+  expect(repo.getSynthesis(url)).toBeNull(); // not cached
+  const second = await getOrCreateSynthesis(repo, encodeId(url), gen);
+  expect(gen).toHaveBeenCalledTimes(2); // called again since not cached
+  expect(second).toEqual(emptySynth);
+});
