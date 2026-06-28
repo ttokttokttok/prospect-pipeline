@@ -20,7 +20,7 @@ const SCORE_SCHEMA = {
 };
 
 export async function discoverCompanies(icp: ICP, limit = 20): Promise<Company[]> {
-  const [fromCb, fromWeb] = await Promise.all([fromCrunchbase(icp), fromWeb_(icp)]);
+  const [fromCb, fromWeb] = await Promise.all([fromCrunchbase(icp).catch(() => []), fromWeb_(icp).catch(() => [])]);
 
   // Dedupe by domain (crunchbase wins on conflict — richer data).
   const byDomain = new Map<string, RawCompany>();

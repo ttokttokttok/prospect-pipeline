@@ -61,3 +61,13 @@ test("skips crunchbase when fundingStage is null", async () => {
   expect(cbSearch).not.toHaveBeenCalled();
   expect(out[0].domain).toBe("foo.com");
 });
+
+test("returns crunchbase results even when web.search rejects", async () => {
+  cbSearch.mockResolvedValue([
+    { name: "Acme", website_url: "https://acme.com", linkedin_url: null, short_description: "dev tool" },
+  ]);
+  webSearch.mockRejectedValue(new Error("web search unavailable"));
+  const out = await discoverCompanies(icp, 20);
+  expect(out).toHaveLength(1);
+  expect(out[0].domain).toBe("acme.com");
+});

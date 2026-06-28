@@ -25,13 +25,13 @@ test("merges founders (web) + eng leadership (db), dedupes, caps at perCompany",
   getEmployees
     // founders (web strategy)
     .mockResolvedValueOnce({ employees: [
-      { name: "Ana Founder", title: "CEO & Co-Founder", linkedinUrl: "https://linkedin.com/in/ana" },
-      { name: "Dup", title: "CTO", linkedinUrl: "https://linkedin.com/in/ana" },
+      { lp_public_profile_url: "https://linkedin.com/in/ana", lp_formatted_name: "Ana Founder", lp_title: "CEO & Co-Founder" },
+      { lp_public_profile_url: "https://linkedin.com/in/ana", lp_formatted_name: "Dup", lp_title: "CTO" },
     ] })
     // eng leadership (database strategy)
     .mockResolvedValueOnce({ employees: [
-      { name: "Bo Eng", title: "VP Engineering", linkedinUrl: "https://linkedin.com/in/bo" },
-      { name: "Cy Eng", title: "Head of Platform", linkedinUrl: "https://linkedin.com/in/cy" },
+      { lp_public_profile_url: "https://linkedin.com/in/bo", lp_formatted_name: "Bo Eng", lp_title: "VP Engineering" },
+      { lp_public_profile_url: "https://linkedin.com/in/cy", lp_formatted_name: "Cy Eng", lp_title: "Head of Platform" },
     ] });
   const people = await findPeople(company, ["founder", "eng-leadership"], 3);
   const urls = people.map((p) => p.linkedinUrl);
@@ -48,7 +48,7 @@ test("resolves company linkedin url when missing", async () => {
 });
 
 test("skips people with no linkedinUrl", async () => {
-  getEmployees.mockResolvedValue({ employees: [{ name: "No URL", title: "CEO", linkedinUrl: null }] });
+  getEmployees.mockResolvedValue({ employees: [{ lp_public_profile_url: null, lp_formatted_name: "No URL", lp_title: "CEO" }] });
   const people = await findPeople(company, ["founder"], 3);
   expect(people).toHaveLength(0);
 });
