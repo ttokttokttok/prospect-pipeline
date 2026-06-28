@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import type { EnrichedPerson, Synthesis } from "../../../src/types";
+import type { EnrichedPerson, Synthesis, PersonMetrics } from "../../../src/types";
 import { Card, Badge, Button, Skeleton } from "../../../src/ui/primitives";
+import { InterestRadar } from "../../../src/ui/radar";
 
 export default function DossierPage() {
   const { id } = useParams<{ id: string }>();
   const [dossier, setDossier] = useState<EnrichedPerson | null>(null);
   const [synthesis, setSynthesis] = useState<Synthesis | null>(null);
+  const [metrics, setMetrics] = useState<PersonMetrics | null>(null);
   const [synthLoading, setSynthLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
@@ -30,6 +32,7 @@ export default function DossierPage() {
       const data = await res.json();
       setDossier(data.dossier);
       setSynthesis(data.synthesis);
+      setMetrics(data.metrics);
       if (!data.synthesis) generate();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,6 +66,19 @@ export default function DossierPage() {
         </div>
       </header>
 
+      {(synthesis?.currentFocus || metrics) && (
+        <div className="mt-3 rounded-lg bg-blue-50 p-3">
+          {synthesis?.currentFocus && (
+            <p className="text-sm"><span className="font-semibold text-blue-900">✦ Current focus: </span><span className="text-blue-900">{synthesis.currentFocus}</span></p>
+          )}
+          <div className="mt-1 flex flex-wrap gap-2 text-xs text-neutral-600">
+            {metrics?.tenureMonths != null && <span>⏳ {fmtTenure(metrics.tenureMonths)} at {p.companyDomain}</span>}
+            {metrics?.recentlyActive && <span>🟢 Active recently</span>}
+            {!metrics?.recentlyActive && metrics?.lastPostAt && <span>Last posted {metrics.lastPostAt}</span>}
+          </div>
+        </div>
+      )}
+
       {/* AI synthesis — the centerpiece */}
       <Card className="mt-5 p-4">
         <div className="mb-2 flex items-center justify-between">
@@ -77,11 +93,13 @@ export default function DossierPage() {
         ) : synthesis && (synthesis.summary || synthesis.hooks.length) ? (
           <>
             <p className="text-sm text-neutral-800">{synthesis.summary}</p>
-            {synthesis.interests.length > 0 && (
+            {synthesis.interestProfile && synthesis.interestProfile.length > 0 ? (
+              <div className="mt-3"><InterestRadar data={synthesis.interestProfile} /></div>
+            ) : synthesis.interests.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-1">
                 {synthesis.interests.map((t) => <Badge key={t} className="bg-blue-50 text-blue-700">{t}</Badge>)}
               </div>
-            )}
+            ) : null}
             {synthesis.hooks.length > 0 && (
               <ul className="mt-3 space-y-2">
                 {synthesis.hooks.map((h, i) => (
@@ -129,7 +147,10 @@ export default function DossierPage() {
       {p.posts.length > 0 && (
         <Section title="Recent posts">
           <div className="space-y-2">
-            {p.posts.map((post, i) => (
+            {[...p.posts]
+              .sort((a, b) => (b.postedAt ?? "").localeCompare(a.postedAt ?? ""))
+              .slice(0, 3)
+              .map((post, i) => (
               <Card key={i} className="p-3">
                 <p className="text-sm text-neutral-800">{post.text}</p>
                 <div className="mt-1 text-xs text-neutral-400">
@@ -156,6 +177,13 @@ export default function DossierPage() {
       )}
     </main>
   );
+}
+
+function fmtTenure(months: number): string {
+  if (months < 12) return `${months} mo`;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  return m ? `${y}y ${m}mo` : `${y} yr${y > 1 ? "s" : ""}`;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
