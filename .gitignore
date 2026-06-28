@@ -9,3 +9,7 @@ prospect.db-*
 .DS_Store
 .mcp.json
 .superpowers/
+
+# typescript / next build artifacts
+*.tsbuildinfo
+next-env.d.ts
