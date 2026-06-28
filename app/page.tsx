@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { PersonCard } from "../src/types";
 import { Card, Badge, Button, Skeleton } from "../src/ui/primitives";
@@ -9,29 +9,58 @@ export default function Home() {
   const [people, setPeople] = useState<PersonCard[] | null>(null);
   const [prompt, setPrompt] = useState("");
   const [runStatus, setRunStatus] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   async function load() {
     const res = await fetch("/api/people");
+    if (!res.ok) {
+      setPeople([]);
+      return;
+    }
     const data = await res.json();
-    setPeople(data.people);
+    setPeople(data.people ?? []);
   }
   useEffect(() => { load(); }, []);
 
+  // Fix 1: clear interval on unmount to prevent leaks
+  useEffect(() => () => clearInterval(pollRef.current), []);
+
   async function startRun() {
     if (!prompt.trim()) return;
+    // Fix 3: guard against re-entry
+    if (running) return;
+    setRunning(true);
     setRunStatus("starting…");
     const res = await fetch("/api/runs", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ prompt }),
     });
+    // Fix 4: guard POST failure
+    if (!res.ok) {
+      setRunStatus("Error starting run.");
+      setRunning(false);
+      return;
+    }
     const { jobId } = await res.json();
-    const poll = setInterval(async () => {
-      const j = await (await fetch(`/api/runs/${jobId}`)).json();
-      setRunStatus(`${j.status} — ${j.progress?.stage ?? ""} (${j.progress?.people ?? 0} people)`);
-      if (j.status === "completed" || j.status === "failed") {
-        clearInterval(poll);
-        load();
+    // Fix 1: store interval in ref so cleanup effect can clear it
+    pollRef.current = setInterval(async () => {
+      // Fix 5: wrap poll body in try/catch
+      try {
+        const pollRes = await fetch(`/api/runs/${jobId}`);
+        if (!pollRes.ok) throw new Error(`Poll failed: ${pollRes.status}`);
+        const j = await pollRes.json();
+        setRunStatus(`${j.status} — ${j.progress?.stage ?? ""} (${j.progress?.people ?? 0} people)`);
+        if (j.status === "completed" || j.status === "failed") {
+          clearInterval(pollRef.current);
+          setRunning(false);
+          load();
+        }
+      } catch {
+        clearInterval(pollRef.current);
+        setRunStatus("Polling error — run status unknown.");
+        setRunning(false);
       }
     }, 2000);
   }
@@ -48,7 +77,8 @@ export default function Home() {
           placeholder='e.g. "Series A dev tool companies"'
           className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
         />
-        <Button onClick={startRun}>Run</Button>
+        {/* Fix 3: disable button while running */}
+        <Button onClick={startRun} disabled={running}>Run</Button>
       </div>
       {runStatus && <p className="mb-4 text-sm text-neutral-600">{runStatus}</p>}
 
