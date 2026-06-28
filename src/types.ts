@@ -124,6 +124,22 @@ export interface Synthesis {
   hooks: Hook[];
 }
 
+// --- Champion Comment Engine (targeted organic outreach) ---
+
+export interface PainPoint {
+  label: string;
+  evidence: string; // quote/paraphrase from the person's posts grounding the pain point
+}
+
+// A drafted LinkedIn comment on the person's most recent post, in the founder's voice.
+export interface CommentDraft {
+  postUrl: string | null; // the post being replied to
+  postText: string | null; // its text (so the UI can show "replying to…")
+  painPoints: PainPoint[];
+  comment: string;
+  postAngles: string[]; // secondary broadcast-post angles
+}
+
 export const DEFAULT_ROLES = ["founder", "eng-leadership"];
 
 export function domainFromUrl(url: string | null): string | null {

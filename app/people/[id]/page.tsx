@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import type { EnrichedPerson, Synthesis } from "../../../src/types";
+import type { CommentDraft, EnrichedPerson, Synthesis } from "../../../src/types";
 import { Card, Badge, Button, Skeleton } from "../../../src/ui/primitives";
 
 export default function DossierPage() {
@@ -12,6 +12,10 @@ export default function DossierPage() {
   const [synthesis, setSynthesis] = useState<Synthesis | null>(null);
   const [synthLoading, setSynthLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [comment, setComment] = useState<CommentDraft | null>(null);
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [voice, setVoice] = useState("");
+  const [product, setProduct] = useState("");
 
   async function generate(force = false) {
     setSynthLoading(true);
@@ -23,6 +27,28 @@ export default function DossierPage() {
     }
   }
 
+  // Founder voice + product persist across people (it's the same founder).
+  async function draftComment() {
+    setCommentLoading(true);
+    try {
+      localStorage.setItem("ccg.voice", voice);
+      localStorage.setItem("ccg.product", product);
+      const res = await fetch(`/api/people/${id}/comment`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ voiceInput: voice, product }),
+      });
+      if (res.ok) setComment((await res.json()).comment);
+    } finally {
+      setCommentLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    setVoice(localStorage.getItem("ccg.voice") ?? "");
+    setProduct(localStorage.getItem("ccg.product") ?? "");
+  }, []);
+
   useEffect(() => {
     (async () => {
       const res = await fetch(`/api/people/${id}`);
@@ -30,6 +56,7 @@ export default function DossierPage() {
       const data = await res.json();
       setDossier(data.dossier);
       setSynthesis(data.synthesis);
+      setComment(data.comment ?? null);
       if (!data.synthesis) generate();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,6 +122,75 @@ export default function DossierPage() {
           </>
         ) : (
           <div className="text-sm text-neutral-500">Couldn&apos;t generate hooks. <button className="underline" onClick={() => generate(true)}>Retry</button></div>
+        )}
+      </Card>
+
+      {/* Champion comment — targeted organic outreach in the founder's voice */}
+      <Card className="mt-5 border-emerald-200 bg-emerald-50/40 p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-700">✎ Draft comment (your voice)</h2>
+          <div className="flex gap-2">
+            {comment?.comment && (
+              <Button
+                className="bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+                onClick={() => navigator.clipboard.writeText(comment.comment)}
+              >
+                Copy
+              </Button>
+            )}
+            <Button onClick={draftComment} disabled={commentLoading || p.posts.length === 0}>
+              {commentLoading ? "Drafting…" : comment ? "Regenerate" : "Draft comment"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="mb-3 grid gap-2 sm:grid-cols-2">
+          <input
+            value={product}
+            onChange={(e) => setProduct(e.target.value)}
+            placeholder="Your product (one-liner)"
+            className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          />
+          <textarea
+            value={voice}
+            onChange={(e) => setVoice(e.target.value)}
+            placeholder="Your voice — paste a few of your own posts"
+            rows={2}
+            className="rounded-lg border border-neutral-300 px-3 py-2 text-sm sm:row-span-2"
+          />
+        </div>
+
+        {p.posts.length === 0 ? (
+          <div className="text-sm text-neutral-500">No scraped posts for this person — re-run with posts enabled to draft a comment.</div>
+        ) : commentLoading && !comment ? (
+          <div className="space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-2/3" /></div>
+        ) : comment ? (
+          <>
+            {comment.postText && (
+              <div className="mb-3 rounded-lg border border-neutral-200 bg-white p-3 text-sm text-neutral-600">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">Replying to their post</div>
+                {comment.postText.slice(0, 280)}{comment.postText.length > 280 ? "…" : ""}
+              </div>
+            )}
+            <div className="rounded-lg border border-emerald-300 bg-white p-3 text-sm text-neutral-900">{comment.comment}</div>
+            {comment.painPoints.length > 0 && (
+              <ul className="mt-3 space-y-1 text-sm">
+                {comment.painPoints.map((pp, i) => (
+                  <li key={i}><span className="font-medium">{pp.label}</span> <span className="text-neutral-500">— {pp.evidence}</span></li>
+                ))}
+              </ul>
+            )}
+            {comment.postAngles.length > 0 && (
+              <div className="mt-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Post angles</div>
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-neutral-700">
+                  {comment.postAngles.map((a, i) => <li key={i}>{a}</li>)}
+                </ul>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-sm text-neutral-500">Add your product + voice, then draft a comment grounded in their recent posts.</div>
         )}
       </Card>
 

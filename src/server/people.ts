@@ -1,7 +1,9 @@
 import { decodeId } from "../ids";
 import { synthesize } from "../pipeline/synthesize";
+import { buildVoiceProfile } from "../pipeline/voice";
+import { generateComment } from "../pipeline/comment";
 import type { Repo } from "../storage/repo";
-import type { EnrichedPerson, PersonCard, Synthesis } from "../types";
+import type { CommentDraft, EnrichedPerson, PersonCard, Synthesis } from "../types";
 
 export function listPeopleCards(repo: Repo): PersonCard[] {
   return repo.listPeople();
@@ -10,10 +12,29 @@ export function listPeopleCards(repo: Repo): PersonCard[] {
 export function getPersonDetail(
   repo: Repo,
   id: string,
-): { dossier: EnrichedPerson; synthesis: Synthesis | null } | null {
-  const dossier = repo.getDossier(decodeId(id));
+): { dossier: EnrichedPerson; synthesis: Synthesis | null; comment: CommentDraft | null } | null {
+  const url = decodeId(id);
+  const dossier = repo.getDossier(url);
   if (!dossier) return null;
-  return { dossier, synthesis: repo.getSynthesis(decodeId(id)) };
+  return { dossier, synthesis: repo.getSynthesis(url), comment: repo.getComment(url) };
+}
+
+// Drafts an in-voice comment from the person's real posts. Inputs (voice/product)
+// vary, so this always regenerates and overwrites the cached draft.
+export async function draftComment(
+  repo: Repo,
+  id: string,
+  voiceInput: string,
+  product: string,
+  gen: typeof generateComment = generateComment,
+): Promise<CommentDraft | null> {
+  const url = decodeId(id);
+  const dossier = repo.getDossier(url);
+  if (!dossier) return null;
+  const voiceSummary = await buildVoiceProfile(voiceInput);
+  const c = await gen(dossier, voiceSummary, product);
+  if (c.comment) repo.setComment(url, c);
+  return c;
 }
 
 export async function getOrCreateSynthesis(
