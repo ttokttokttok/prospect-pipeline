@@ -1,5 +1,6 @@
 import type { Db } from "./db";
-import type { Company, EnrichedPerson, Job, Progress, RunParams } from "../types";
+import type { Company, EnrichedPerson, Job, PersonCard, Progress, RunParams, Synthesis } from "../types";
+import { encodeId } from "../ids";
 
 const EMPTY_PROGRESS: Progress = { stage: "queued", companies: 0, people: 0, contacts: 0 };
 
@@ -84,6 +85,43 @@ export class Repo {
   needsContact(linkedinUrl: string): boolean {
     const p = this.getPerson(linkedinUrl);
     return !p || p.lastEnrichedAt === null;
+  }
+
+  listPeople(limit = 200): PersonCard[] {
+    const rows = this.db
+      .prepare("SELECT linkedin_url, name, title, company_domain, twitter, dossier, synthesis FROM people ORDER BY rowid DESC LIMIT ?")
+      .all(limit) as any[];
+    return rows.map((r) => {
+      let skills: string[] = [];
+      let isInfluencer = false;
+      if (r.dossier) {
+        try {
+          const d = JSON.parse(r.dossier);
+          skills = Array.isArray(d.skills) ? d.skills : [];
+          isInfluencer = Boolean(d.isInfluencer);
+        } catch { /* ignore malformed dossier */ }
+      }
+      return {
+        id: encodeId(r.linkedin_url),
+        linkedinUrl: r.linkedin_url,
+        name: r.name ?? "",
+        title: r.title ?? null,
+        companyDomain: r.company_domain ?? "",
+        twitter: r.twitter ?? null,
+        skills,
+        isInfluencer,
+        hasSynthesis: r.synthesis != null,
+      };
+    });
+  }
+
+  getSynthesis(linkedinUrl: string): Synthesis | null {
+    const row = this.db.prepare("SELECT synthesis FROM people WHERE linkedin_url = ?").get(linkedinUrl) as any;
+    return row?.synthesis ? (JSON.parse(row.synthesis) as Synthesis) : null;
+  }
+
+  setSynthesis(linkedinUrl: string, s: Synthesis): void {
+    this.db.prepare("UPDATE people SET synthesis = ? WHERE linkedin_url = ?").run(JSON.stringify(s), linkedinUrl);
   }
 
   addSignals(linkedinUrl: string, signals: { source: "linkedin" | "twitter" | "web"; content: string; url: string }[]): void {

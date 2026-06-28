@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS people (
   personal_email TEXT,
   phone TEXT,
   last_enriched_at TEXT,
-  dossier TEXT
+  dossier TEXT,
+  synthesis TEXT
 );
 CREATE TABLE IF NOT EXISTS signals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,11 +46,10 @@ export function openDb(path = process.env.PROSPECT_DB_PATH ?? "./prospect.db") {
   const db = new Database(path);
   db.pragma("journal_mode = WAL");
   db.exec(SCHEMA);
-  // Idempotent migration for DBs created before the dossier column existed.
+  // Idempotent migration for DBs created before the dossier/synthesis columns existed.
   const cols = db.prepare("PRAGMA table_info(people)").all() as { name: string }[];
-  if (!cols.some((c) => c.name === "dossier")) {
-    db.exec("ALTER TABLE people ADD COLUMN dossier TEXT");
-  }
+  if (!cols.some((c) => c.name === "dossier")) db.exec("ALTER TABLE people ADD COLUMN dossier TEXT");
+  if (!cols.some((c) => c.name === "synthesis")) db.exec("ALTER TABLE people ADD COLUMN synthesis TEXT");
   return db;
 }
 

@@ -101,6 +101,29 @@ export interface Job {
   finishedAt: string | null;
 }
 
+export interface PersonCard {
+  id: string;
+  linkedinUrl: string;
+  name: string;
+  title: string | null;
+  companyDomain: string;
+  twitter: string | null;
+  skills: string[];
+  isInfluencer: boolean;
+  hasSynthesis: boolean;
+}
+
+export interface Hook {
+  angle: string;
+  why: string;
+}
+
+export interface Synthesis {
+  summary: string;
+  interests: string[];
+  hooks: Hook[];
+}
+
 export const DEFAULT_ROLES = ["founder", "eng-leadership"];
 
 export function domainFromUrl(url: string | null): string | null {

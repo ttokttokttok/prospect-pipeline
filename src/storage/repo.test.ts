@@ -63,3 +63,31 @@ test("upsertPerson stores the full dossier as JSON and getDossier round-trips it
   expect(back.posts[0].text).toBe("hello");
   expect(back.rawProfile).toEqual({ foo: "bar" });
 });
+
+test("listPeople returns cards with parsed skills, influencer flag, and synthesis presence", () => {
+  const base = {
+    linkedinUrl: "https://linkedin.com/in/jane", companyDomain: "acme.com", name: "Jane", title: "CTO",
+    headline: "CTO", twitter: "jane", workEmail: null, personalEmail: null, phone: null,
+    experience: [], education: [], certifications: [], languages: [], jobsCount: null, recommenderCount: null,
+    posts: [], webMentions: [], rawProfile: null,
+  };
+  repo.upsertPerson({ ...base, skills: ["Go", "K8s"], isInfluencer: true } as any);
+  const cards = repo.listPeople();
+  expect(cards).toHaveLength(1);
+  expect(cards[0]).toMatchObject({ name: "Jane", skills: ["Go", "K8s"], isInfluencer: true, hasSynthesis: false });
+  expect(cards[0].id).toBeTruthy();
+});
+
+test("getSynthesis/setSynthesis round-trip and flip hasSynthesis", () => {
+  const url = "https://linkedin.com/in/jane";
+  repo.upsertPerson({
+    linkedinUrl: url, companyDomain: "acme.com", name: "Jane", title: "CTO", headline: null, twitter: null,
+    workEmail: null, personalEmail: null, phone: null, skills: [], experience: [], education: [],
+    certifications: [], languages: [], isInfluencer: false, jobsCount: null, recommenderCount: null,
+    posts: [], webMentions: [], rawProfile: null,
+  } as any);
+  expect(repo.getSynthesis(url)).toBeNull();
+  repo.setSynthesis(url, { summary: "s", interests: ["a"], hooks: [{ angle: "x", why: "y" }] });
+  expect(repo.getSynthesis(url)!.hooks[0].angle).toBe("x");
+  expect(repo.listPeople()[0].hasSynthesis).toBe(true);
+});
