@@ -67,7 +67,10 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-5xl p-6">
-      <h1 className="mb-1 text-2xl font-bold">Prospect</h1>
+      <div className="mb-1 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Prospect</h1>
+        <Link href="/settings" className="text-sm text-blue-600 hover:underline">Sender profile →</Link>
+      </div>
       <p className="mb-6 text-sm text-neutral-500">Browse collected prospects and their cold-email hooks.</p>
 
       <div className="mb-6 flex gap-2">
