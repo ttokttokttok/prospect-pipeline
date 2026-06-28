@@ -36,13 +36,22 @@ async function resolveCompanyUrl(company: Company): Promise<string | null> {
   }
 }
 
+// Title regexes for the database strategy. The "web" strategy was empirically
+// ineffective (returned 0 founders even when they were indexed), so all roles
+// use the database with usOnly:false — Series A founders are often non-US.
+const FOUNDER_FILTER = "pos.title ~* '\\m(Founder|Co-?Founder|CEO|CTO|COO|CPO|President)\\M'";
+const ENG_LEADERSHIP_FILTER =
+  "pos.title ~* '\\m(VP|Vice President|Director|Head|Chief|CTO)\\M' AND " +
+  "pos.title ~* '\\m(Engineering|Engineer|Platform|Infrastructure|Technology|Technical|Product)\\M'";
+
 async function fetchRole(linkedinUrl: string, role: string): Promise<RawEmployee[]> {
   try {
     if (role === "founder") {
       const { employees } = await services.company.getEmployeesFromLinkedin({
         linkedinUrl,
-        searchStrategy: "web",
-        titleVariations: ["founder", "ceo", "cto"], // web strategy: max 3 variations
+        searchStrategy: "database",
+        titleSqlFilter: FOUNDER_FILTER,
+        usOnly: false,
         limit: 10,
       });
       return (employees ?? []) as RawEmployee[];
@@ -51,7 +60,8 @@ async function fetchRole(linkedinUrl: string, role: string): Promise<RawEmployee
       const { employees } = await services.company.getEmployeesFromLinkedin({
         linkedinUrl,
         searchStrategy: "database",
-        titleSqlFilter: "pos.title ~* '\\m(VP|Director|Head)\\M' AND pos.title ~* '\\m(Engineering|Platform|Infrastructure)\\M'",
+        titleSqlFilter: ENG_LEADERSHIP_FILTER,
+        usOnly: false,
         limit: 10,
       });
       return (employees ?? []) as RawEmployee[];
@@ -61,6 +71,7 @@ async function fetchRole(linkedinUrl: string, role: string): Promise<RawEmployee
       linkedinUrl,
       searchStrategy: "database",
       titleVariations: [role],
+      usOnly: false,
       limit: 10,
     });
     return (employees ?? []) as RawEmployee[];

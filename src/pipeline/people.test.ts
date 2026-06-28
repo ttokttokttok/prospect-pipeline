@@ -21,9 +21,9 @@ beforeEach(() => {
   findUrl.mockReset();
 });
 
-test("merges founders (web) + eng leadership (db), dedupes, caps at perCompany", async () => {
+test("merges founders + eng leadership, dedupes, caps at perCompany", async () => {
   getEmployees
-    // founders (web strategy)
+    // founders
     .mockResolvedValueOnce({ employees: [
       { lp_public_profile_url: "https://linkedin.com/in/ana", lp_formatted_name: "Ana Founder", lp_title: "CEO & Co-Founder" },
       { lp_public_profile_url: "https://linkedin.com/in/ana", lp_formatted_name: "Dup", lp_title: "CTO" },
@@ -38,6 +38,15 @@ test("merges founders (web) + eng leadership (db), dedupes, caps at perCompany",
   expect(new Set(urls).size).toBe(urls.length); // no dupes
   expect(people).toHaveLength(3);
   expect(people[0].companyDomain).toBe("acme.com");
+});
+
+test("founder lookup uses database strategy with usOnly:false (web strategy returned 0)", async () => {
+  getEmployees.mockResolvedValue({ employees: [] });
+  await findPeople(company, ["founder"], 3);
+  const params = getEmployees.mock.calls[0][0];
+  expect(params.searchStrategy).toBe("database");
+  expect(params.usOnly).toBe(false);
+  expect(params.titleSqlFilter).toMatch(/Founder/i);
 });
 
 test("resolves company linkedin url when missing", async () => {
