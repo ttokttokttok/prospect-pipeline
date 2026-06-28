@@ -53,13 +53,30 @@ test("sorts by fitScore desc and respects limit", async () => {
   expect(out[0].name).toBe("High");
 });
 
-test("skips crunchbase when fundingStage is null", async () => {
-  webSearch.mockResolvedValue({
-    results: [{ title: "Foo", link: "https://foo.com", snippet: "a devtool" }],
-  });
-  const out = await discoverCompanies({ ...icp, fundingStage: null }, 20);
+test("uses crunchbase even when fundingStage is null (no funding filter applied)", async () => {
+  cbSearch.mockResolvedValue([
+    { name: "Foo", website_url: "https://foo.com", linkedin_url: null, short_description: "a devtool" },
+  ]);
+  webSearch.mockResolvedValue({ results: [] });
+  await discoverCompanies({ ...icp, fundingStage: null }, 20);
+  expect(cbSearch).toHaveBeenCalled();
+  const sql = cbSearch.mock.calls[0][0].sql as string;
+  expect(sql).not.toContain("last_funding_type");
+});
+
+test("skips crunchbase when there are no keywords", async () => {
+  webSearch.mockResolvedValue({ results: [] });
+  await discoverCompanies({ ...icp, keywords: [] }, 20);
   expect(cbSearch).not.toHaveBeenCalled();
-  expect(out[0].domain).toBe("foo.com");
+});
+
+test("crunchbase query matches across category fields, not just description", async () => {
+  cbSearch.mockResolvedValue([]);
+  webSearch.mockResolvedValue({ results: [] });
+  await discoverCompanies(icp, 20);
+  const sql = cbSearch.mock.calls[0][0].sql as string;
+  expect(sql).toContain("categories::text ILIKE");
+  expect(sql).toContain("category_groups::text ILIKE");
 });
 
 test("crunchbase query matches ALL keywords, not just the first", async () => {

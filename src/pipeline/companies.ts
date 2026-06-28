@@ -55,29 +55,44 @@ export async function discoverCompanies(icp: ICP, limit = 20): Promise<Company[]
   return scored.sort((a, b) => b.fitScore - a.fitScore).slice(0, limit);
 }
 
+// Fields a keyword can match against. Crunchbase tags companies with several
+// `categories` (jsonb) beyond their one `primary_category`, so a relevant
+// company may not carry the keyword in its short blurb — match all of them.
+const CB_MATCH_FIELDS = [
+  "short_description",
+  "description",
+  "primary_category",
+  "categories::text",
+  "category_groups::text",
+];
+
 async function fromCrunchbase(icp: ICP): Promise<RawCompany[]> {
-  if (!icp.fundingStage) return [];
-  const stage = icp.fundingStage.replace(/'/g, "''");
-  // Match ANY of the ICP keywords (interpret often emits jargon like "devtools"
-  // first, which matches no descriptions; OR-ing all keywords avoids 0-row results).
-  const keywordClause = icp.keywords.length
-    ? "AND (" +
-      icp.keywords
-        .map((k) => {
-          const e = k.replace(/'/g, "''");
-          return `short_description ILIKE '%${e}%' OR primary_category ILIKE '%${e}%'`;
-        })
-        .join(" OR ") +
-      ")"
+  // Need at least one keyword to scope the search (else the net is the whole DB).
+  if (!icp.keywords.length) return [];
+  // Funding filter only when the ICP specifies a stage — so ICPs without a stage
+  // (e.g. "AI infra startups") still get Crunchbase company coverage.
+  const stageClause = icp.fundingStage
+    ? `AND last_funding_type = '${icp.fundingStage.replace(/'/g, "''")}'`
     : "";
+  // Match ANY keyword across ANY field. interpret's keyword phrasing varies run
+  // to run, so widen recall here and let the AI fit-scorer pick the best N.
+  const keywordClause =
+    "AND (" +
+    icp.keywords
+      .map((k) => {
+        const e = k.replace(/'/g, "''");
+        return CB_MATCH_FIELDS.map((f) => `${f} ILIKE '%${e}%'`).join(" OR ");
+      })
+      .join(" OR ") +
+    ")";
   const rows = (await services.crunchbase.search({
     sql: `SELECT name, website_url, linkedin_url, short_description
           FROM public.crunchbase_scraper_lean
           WHERE operating_status = 'active'
-            AND last_funding_type = '${stage}'
+            ${stageClause}
             ${keywordClause}
           ORDER BY rank_org ASC NULLS LAST
-          LIMIT 60`,
+          LIMIT 50`,
   })) as any[];
   return rows
     .map((r): RawCompany | null => {
