@@ -30,7 +30,11 @@ the upcoming cold-email phase.
 ## Decisions (locked)
 
 - **Posts default ON** — drop the `--posts` gate; collect posts on every run. Keep a `--no-posts`
-  escape hatch (CLI) / `posts:false` (API) for ultra-cheap runs.
+  escape hatch (CLI) / `posts:false` (API).
+- **Contacts default ON** — credits are not a constraint (~52k available), so verified email/phone is
+  fetched on every run too. Keep a `--no-contacts` escape hatch (CLI) / `contacts:false` (API).
+  Note: this makes a default run take **several minutes** (contact.get is ~10 min/person, parallelized)
+  rather than ~15s — accepted. The `last_enriched_at` credit cache still prevents re-paying across runs.
 - **Momentum = posts-only** — recency is based on the most recent post date (no role-change heuristic).
 - **Radar via recharts** (a specialized chart lib), not hand-rolled. Verify it builds under Next 16 /
   React 19 / Turbopack; if it genuinely fights the build, fall back to a minimal SVG radar.
@@ -54,11 +58,13 @@ export interface PersonMetrics {
 
 ## Backend
 
-- **Posts default-on** (`src/types.ts`, `src/pipeline/run.ts`, `app/api/runs/route.ts`, `scripts/run.ts`):
-  - `RunParams.posts` default `true`.
-  - CLI: `--no-posts` sets `posts:false` (replace the `--posts` enable flag; update usage string).
-  - API: `posts: body.posts !== false` (default true).
-  - `run.ts` already threads `params.posts` to `enrichPerson`; gatherPosts still gates on `opts.posts`.
+- **Posts + contacts default-on** (`src/types.ts`, `src/pipeline/run.ts`, `app/api/runs/route.ts`, `scripts/run.ts`):
+  - `RunParams.posts` and `RunParams.contacts` default `true`.
+  - CLI: `--no-posts` sets `posts:false`, `--no-contacts` sets `contacts:false` (replace the old
+    `--posts`/`--contacts` enable flags; update usage string).
+  - API: `posts: body.posts !== false`, `contacts: body.contacts !== false` (default true).
+  - `run.ts` already threads both to `enrichPerson`; gatherPosts gates on `opts.posts`, contact fetch
+    on `opts.contacts && !opts.skipContact` (the credit cache still skips already-enriched people).
 - **`synthesize.ts`** — extend the schema/prompt/mapping with:
   - `currentFocus`: grounded one-liner from current role + recent posts.
   - `interestProfile`: 5-7 `{category, score}` axes, scores 0-100, grounded; instruct "pick the
@@ -103,7 +109,7 @@ To populate the brain view, re-run prospects (posts now default-on) and Regenera
 - **Backend (TDD, mock `../orange`):**
   - `synthesize` maps `currentFocus` + `interestProfile` (incl. score coercion to numbers) and degrades to `""`/`[]`.
   - `computeMetrics`: tenure from a current role with a start date; `lastPostAt`/`recentlyActive` from posts (recent vs old vs none) — use fixed `postedAt` dates in fixtures (do not rely on real "now" drift beyond a wide threshold).
-  - posts default: `RunParams`/CLI/API default to posts-on; `--no-posts`/`posts:false` disables.
+  - defaults: `RunParams`/CLI/API default both `posts` and `contacts` to on; `--no-posts`/`--no-contacts` (and `posts:false`/`contacts:false`) disable each.
   - `getPersonDetail` includes `metrics`.
 - **UI:** build-verified + manual pass (no React test runner). The controller will run the dev server, regenerate a synthesis, and confirm the radar + focus + chips + recent posts render.
 
