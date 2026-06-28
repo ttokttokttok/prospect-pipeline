@@ -66,18 +66,24 @@ export default function DossierPage() {
         </div>
       </header>
 
-      {(synthesis?.currentFocus || metrics) && (
-        <div className="mt-3 rounded-lg bg-blue-50 p-3">
-          {synthesis?.currentFocus && (
-            <p className="text-sm"><span className="font-semibold text-blue-900">✦ Current focus: </span><span className="text-blue-900">{synthesis.currentFocus}</span></p>
-          )}
-          <div className="mt-1 flex flex-wrap gap-2 text-xs text-neutral-600">
-            {metrics?.tenureMonths != null && <span>⏳ {fmtTenure(metrics.tenureMonths)} at {p.companyDomain}</span>}
-            {metrics?.recentlyActive && <span>🟢 Active recently</span>}
-            {!metrics?.recentlyActive && metrics?.lastPostAt && <span>Last posted {metrics.lastPostAt}</span>}
+      {(() => {
+        const hasChips = !!metrics && (metrics.tenureMonths != null || metrics.recentlyActive || metrics.lastPostAt != null);
+        if (!synthesis?.currentFocus && !hasChips) return null; // don't render an empty panel
+        return (
+          <div className="mt-3 rounded-lg bg-blue-50 p-3">
+            {synthesis?.currentFocus && (
+              <p className="text-sm"><span className="font-semibold text-blue-900">✦ Current focus: </span><span className="text-blue-900">{synthesis.currentFocus}</span></p>
+            )}
+            {hasChips && (
+              <div className="mt-1 flex flex-wrap gap-2 text-xs text-neutral-600">
+                {metrics!.tenureMonths != null && <span>⏳ {fmtTenure(metrics!.tenureMonths)} at {p.companyDomain}</span>}
+                {metrics!.recentlyActive && <span>🟢 Active recently</span>}
+                {!metrics!.recentlyActive && metrics!.lastPostAt && <span>Last posted {metrics!.lastPostAt}</span>}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* AI synthesis — the centerpiece */}
       <Card className="mt-5 p-4">
