@@ -78,6 +78,7 @@ export interface RunParams {
   prompt: string;
   contacts: boolean;
   roles: string[];
+  posts: boolean;
 }
 
 export type JobStatus = "queued" | "running" | "completed" | "failed";

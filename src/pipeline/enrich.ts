@@ -1,5 +1,26 @@
 import { services } from "../orange";
-import type { Education, EnrichedPerson, Experience, Person, WebMention } from "../types";
+import type { Education, EnrichedPerson, Experience, Person, Post, WebMention } from "../types";
+
+const LINKEDIN_POSTS_ACTOR = "harvestapi/linkedin-profile-posts";
+
+async function gatherPosts(person: Person): Promise<Post[]> {
+  try {
+    const { items } = await (services as any).apify.runActor({
+      actor: LINKEDIN_POSTS_ACTOR,
+      input: { profileUrl: person.linkedinUrl, profileUrls: [person.linkedinUrl] },
+      datasetListParams: { limit: 10 },
+    });
+    return (items ?? []).map((it: any): Post => ({
+      source: "linkedin",
+      text: it.content ?? it.text ?? it.postText ?? "",
+      url: it.linkedinUrl ?? it.url ?? it.postUrl ?? it.link ?? null,
+      postedAt: it.postedAt?.date ?? (typeof it.postedAt === "string" ? it.postedAt : null) ?? it.postedAtISO ?? null,
+      likes: it.engagement?.likes ?? it.numLikes ?? it.likes ?? null,
+    })).filter((p: Post) => p.text);
+  } catch {
+    return [];
+  }
+}
 
 export async function enrichPerson(
   person: Person,
@@ -7,10 +28,11 @@ export async function enrichPerson(
 ): Promise<EnrichedPerson> {
   const wantContact = opts.contacts && !opts.skipContact;
 
-  const [profile, contact, webMentions] = await Promise.all([
+  const [profile, contact, webMentions, posts] = await Promise.all([
     enrichProfile(person.linkedinUrl),
     wantContact ? getContact(person) : Promise.resolve(null),
     gatherWebMentions(person),
+    opts.posts ? gatherPosts(person) : Promise.resolve([] as Post[]),
   ]);
 
   return {
@@ -30,7 +52,7 @@ export async function enrichPerson(
     isInfluencer: Boolean(profile?.is_influencer),
     jobsCount: typeof profile?.jobs_count === "number" ? (profile!.jobs_count as number) : null,
     recommenderCount: typeof profile?.recommender_count === "number" ? (profile!.recommender_count as number) : null,
-    posts: [],
+    posts,
     webMentions,
     rawProfile: profile ?? null,
   };

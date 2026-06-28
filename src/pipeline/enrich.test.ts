@@ -1,14 +1,16 @@
 import { test, expect, vi, beforeEach } from "vitest";
 
-const { linkedinEnrich, contactGet, batchSearch } = vi.hoisted(() => ({
+const { linkedinEnrich, contactGet, batchSearch, apifyRun } = vi.hoisted(() => ({
   linkedinEnrich: vi.fn(),
   contactGet: vi.fn(),
   batchSearch: vi.fn(),
+  apifyRun: vi.fn(),
 }));
 vi.mock("../orange.js", () => ({
   services: {
     person: { linkedin: { enrich: linkedinEnrich }, contact: { get: contactGet } },
     web: { batchSearch },
+    apify: { runActor: apifyRun },
   },
 }));
 
@@ -38,6 +40,7 @@ beforeEach(() => {
   linkedinEnrich.mockReset();
   contactGet.mockReset();
   batchSearch.mockReset();
+  apifyRun.mockReset();
   linkedinEnrich.mockResolvedValue(extendedProfile);
   batchSearch.mockResolvedValue([]);
 });
@@ -104,4 +107,33 @@ test("web mentions degrade to [] when batchSearch throws", async () => {
   const out = await enrichPerson(person, { contacts: false });
   expect(out.webMentions).toEqual([]);
   expect(out.skills).toEqual(["TypeScript", "Distributed Systems"]); // backbone still landed
+});
+
+test("does not fetch posts when posts flag is off", async () => {
+  const out = await enrichPerson(person, { contacts: false });
+  expect(out.posts).toEqual([]);
+  expect(apifyRun).not.toHaveBeenCalled();
+});
+
+test("fetches and maps linkedin posts when posts=true", async () => {
+  apifyRun.mockResolvedValue({
+    items: [
+      {
+        content: "Shipping v2 today!",
+        linkedinUrl: "https://linkedin.com/posts/1",
+        postedAt: { date: "2026-06-01T00:00:00Z" },
+        engagement: { likes: 42 },
+      },
+    ],
+    usageTotalUsd: 0.01,
+  });
+  const out = await enrichPerson(person, { contacts: false, posts: true });
+  expect(out.posts[0]).toMatchObject({ source: "linkedin", text: "Shipping v2 today!", likes: 42 });
+});
+
+test("posts degrade to [] when the actor throws", async () => {
+  apifyRun.mockRejectedValue(new Error("apify rate limit"));
+  const out = await enrichPerson(person, { contacts: false, posts: true });
+  expect(out.posts).toEqual([]);
+  expect(out.skills).toEqual(["TypeScript", "Distributed Systems"]); // backbone intact
 });

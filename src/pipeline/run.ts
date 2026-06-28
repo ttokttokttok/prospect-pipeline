@@ -44,7 +44,7 @@ export async function runPipeline(
     let contacts = 0;
     const results = await Promise.allSettled(
       people.map((p) =>
-        enrichPerson(p, { contacts: params.contacts, skipContact: !repo.needsContact(p.linkedinUrl) }),
+        enrichPerson(p, { contacts: params.contacts, skipContact: !repo.needsContact(p.linkedinUrl), posts: params.posts }),
       ),
     );
     for (const r of results) {
