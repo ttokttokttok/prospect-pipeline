@@ -1,7 +1,7 @@
 import { test, expect, vi, beforeEach } from "vitest";
 import { openDb } from "../storage/db.js";
 import { Repo } from "../storage/repo.js";
-import { listPeopleCards, getPersonDetail, getOrCreateSynthesis } from "./people.js";
+import { listPeopleCards, getPersonDetail, getOrCreateSynthesis, getOrCreateDraft } from "./people.js";
 import { encodeId } from "../ids.js";
 import type { EnrichedPerson } from "../types.js";
 
@@ -73,4 +73,33 @@ test("getPersonDetail includes computed metrics", () => {
   expect(detail.metrics).toHaveProperty("tenureMonths");
   expect(detail.metrics).toHaveProperty("recentlyActive");
   expect(detail.metrics).toHaveProperty("lastPostAt");
+});
+
+const profile = { senderName: "Sam", senderCompany: "Co", offer: "x", valueProp: "y", socialProof: "z", cta: "call?", tone: "warm" };
+
+test("getPersonDetail includes the cached draft (null when none)", () => {
+  expect(getPersonDetail(repo, encodeId(url))!.draft).toBeNull();
+});
+
+test("getOrCreateDraft generates+caches on miss, returns cache on hit, force bypasses, empty not cached", async () => {
+  const gen = vi.fn().mockResolvedValue({ subject: "S", body: "B" });
+  const first = await getOrCreateDraft(repo, encodeId(url), profile, false, gen);
+  expect(first).toEqual({ subject: "S", body: "B" });
+  expect(gen).toHaveBeenCalledTimes(1);
+  await getOrCreateDraft(repo, encodeId(url), profile, false, gen); // cache hit
+  expect(gen).toHaveBeenCalledTimes(1);
+  await getOrCreateDraft(repo, encodeId(url), profile, true, gen);  // force regenerates
+  expect(gen).toHaveBeenCalledTimes(2);
+
+  const emptyGen = vi.fn().mockResolvedValue({ subject: "", body: "" });
+  const url2 = "https://linkedin.com/in/empty";
+  repo.upsertPerson({ ...({} as any), linkedinUrl: url2, companyDomain: "x.com", name: "E", title: null, headline: null, twitter: null, workEmail: null, personalEmail: null, phone: null, skills: [], experience: [], education: [], certifications: [], languages: [], isInfluencer: false, jobsCount: null, recommenderCount: null, posts: [], webMentions: [], rawProfile: null });
+  await getOrCreateDraft(repo, encodeId(url2), profile, false, emptyGen);
+  expect(repo.getDraft(url2)).toBeNull(); // empty not cached
+});
+
+test("getOrCreateDraft returns null for unknown id", async () => {
+  const gen = vi.fn();
+  expect(await getOrCreateDraft(repo, encodeId("https://x/none"), profile, false, gen)).toBeNull();
+  expect(gen).not.toHaveBeenCalled();
 });

@@ -69,9 +69,12 @@ export default function Home() {
     <main className="mx-auto max-w-5xl p-6">
       <div className="mb-1 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Prospect</h1>
-        <Link href="/workspace" className="rounded-lg bg-[#F25C1F] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#DB4F15]">
-          Open Champion Workspace →
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/settings" className="text-sm text-blue-600 hover:underline">Sender profile →</Link>
+          <Link href="/workspace" className="rounded-lg bg-[#F25C1F] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#DB4F15]">
+            Open Champion Workspace →
+          </Link>
+        </div>
       </div>
       <p className="mb-6 text-sm text-neutral-500">Browse collected prospects and their cold-email hooks.</p>
 
