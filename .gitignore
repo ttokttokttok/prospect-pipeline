@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.env.local
+.env
+prospect.db
+prospect.db-*
+runs/
+*.log
+.DS_Store
+.mcp.json
