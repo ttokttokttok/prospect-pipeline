@@ -62,6 +62,18 @@ test("skips crunchbase when fundingStage is null", async () => {
   expect(out[0].domain).toBe("foo.com");
 });
 
+test("crunchbase query matches ALL keywords, not just the first", async () => {
+  const multi: ICP = { ...icp, keywords: ["devtools", "developer tools", "developer tooling"] };
+  cbSearch.mockResolvedValue([]);
+  webSearch.mockResolvedValue({ results: [] });
+  await discoverCompanies(multi, 20);
+  const sql = cbSearch.mock.calls[0][0].sql as string;
+  expect(sql).toContain("%devtools%");
+  expect(sql).toContain("%developer tools%");
+  expect(sql).toContain("%developer tooling%");
+  expect(sql).toContain("last_funding_type = 'series_a'");
+});
+
 test("returns crunchbase results even when web.search rejects", async () => {
   cbSearch.mockResolvedValue([
     { name: "Acme", website_url: "https://acme.com", linkedin_url: null, short_description: "dev tool" },

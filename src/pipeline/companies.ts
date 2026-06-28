@@ -50,14 +50,25 @@ export async function discoverCompanies(icp: ICP, limit = 20): Promise<Company[]
 
 async function fromCrunchbase(icp: ICP): Promise<RawCompany[]> {
   if (!icp.fundingStage) return [];
-  const kw = icp.keywords[0]?.replace(/'/g, "''") ?? "";
   const stage = icp.fundingStage.replace(/'/g, "''");
+  // Match ANY of the ICP keywords (interpret often emits jargon like "devtools"
+  // first, which matches no descriptions; OR-ing all keywords avoids 0-row results).
+  const keywordClause = icp.keywords.length
+    ? "AND (" +
+      icp.keywords
+        .map((k) => {
+          const e = k.replace(/'/g, "''");
+          return `short_description ILIKE '%${e}%' OR primary_category ILIKE '%${e}%'`;
+        })
+        .join(" OR ") +
+      ")"
+    : "";
   const rows = (await services.crunchbase.search({
     sql: `SELECT name, website_url, linkedin_url, short_description
           FROM public.crunchbase_scraper_lean
           WHERE operating_status = 'active'
             AND last_funding_type = '${stage}'
-            AND (short_description ILIKE '%${kw}%' OR primary_category ILIKE '%${kw}%')
+            ${keywordClause}
           ORDER BY rank_org ASC NULLS LAST
           LIMIT 60`,
   })) as any[];
